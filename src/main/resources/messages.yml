@@ -10,12 +10,27 @@ command:
   player-only: "{prefix}&c该命令只能由玩家执行。"
 
 game:
-  room-created: "{prefix}&a已为你创建房间 &f{room}"
   joined-room: "{prefix}&a你加入了房间 &f{room}&a（地图：&f{map}&a）"
+  room-creating: "{prefix}&e正在为地图 &f{map} &e准备房间 &f{room}&e，拷好世界就送你过去……"
+  room-ready: "{prefix}&a房间 &f{room} &a已就绪（地图：&f{map}&a）。"
+  room-failed: "{prefix}&c房间创建失败：&f{reason}"
+  room-closed: "{prefix}&7你所在的房间已关闭，已送你回到出生点。"
+  already-in-room: "{prefix}&e你已经在房间 &f{room} &e里了，用 &f/ds leave &e先退出来。"
+  not-in-room: "{prefix}&7你当前不在任何房间里。"
+  queued: "{prefix}&e房间已满，你排在第 &f{position} &e位，有空位会自动拉你进去。"
   left-room: "{prefix}&7你已离开房间。"
   countdown: "{prefix}&e对局将在 &f{seconds} &e秒后开始……"
   not-enough-players: "{prefix}&c人数不足，至少需要 &f{required} &c人。"
   match-ended: "{prefix}&6对局结束！存活者：&f{survivors}"
+
+room:
+  not-found: "{prefix}&c找不到房间 &f{room}&c，用 &f/ds room list &c看看现有房间。"
+  player-offline: "{prefix}&c玩家 &f{player} &c不在线。"
+  kicked: "{prefix}&e你被 &f{staff} &e移出了房间。"
+  map-not-playable: "{prefix}&c这张地图还不能开局，先用 &f/ds map info &c看缺什么。"
+  queue-full: "{prefix}&c排队人数已达上限，请稍后再试。"
+  name-exhausted: "{prefix}&c同一张地图的副本编号已用完，先关掉一些房间。"
+  create-failed: "{prefix}&c无法创建房间：&f{reason}"
 
 map:
   not-found: "{prefix}&c找不到地图 &f{id}&c。"

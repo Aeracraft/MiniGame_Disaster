@@ -24,10 +24,12 @@ public final class DisasterCommand implements CommandExecutor, TabCompleter {
 
     private final DisasterPlugin plugin;
     private final MapCommand mapCommand;
+    private final RoomCommand roomCommand;
 
     public DisasterCommand(DisasterPlugin plugin) {
         this.plugin = plugin;
         this.mapCommand = new MapCommand(plugin);
+        this.roomCommand = new RoomCommand(plugin);
     }
 
     @Override
@@ -41,8 +43,11 @@ public final class DisasterCommand implements CommandExecutor, TabCompleter {
         switch (args[0].toLowerCase(Locale.ROOT)) {
             case "help", "?" -> sendHelp(sender, label);
             case "info", "version", "ver" -> sendInfo(sender);
+            case "join", "j" -> roomCommand.join(sender, label, tail(args));
+            case "leave", "quit" -> roomCommand.leave(sender);
             case "reload" -> reload(sender);
             case "map" -> mapCommand.execute(sender, label, tail(args));
+            case "room" -> roomCommand.execute(sender, label, tail(args));
             default -> plugin.messages().send(sender, "command.unknown-subcommand", "input", args[0]);
         }
         return true;
@@ -51,7 +56,14 @@ public final class DisasterCommand implements CommandExecutor, TabCompleter {
     private void sendHelp(CommandSender sender, String label) {
         sender.sendMessage("§8§m                                        ");
         sender.sendMessage("§6Disaster §7命令帮助");
+        if (sender.hasPermission(Permissions.PLAY)) {
+            sender.sendMessage("§8» §f/" + label + " join [地图] §7— 加入对局");
+            sender.sendMessage("§8» §f/" + label + " leave §7— 离开当前对局");
+        }
         sender.sendMessage("§8» §f/" + label + " info §7— 查看运行环境与兼容信息");
+        if (sender.hasPermission(Permissions.ADMIN_ROOM)) {
+            sender.sendMessage("§8» §f/" + label + " room §7— 房间管理（§f" + label + " room§7）");
+        }
         if (sender.hasPermission(Permissions.ADMIN_MAP)) {
             sender.sendMessage("§8» §f/" + label + " map §7— 地图管理与标点（§f" + label + " map§7）");
         }
@@ -59,7 +71,7 @@ public final class DisasterCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("§8» §f/" + label + " reload §7— 重载配置、消息与地图定义");
         }
         sender.sendMessage("§8 ");
-        sender.sendMessage("§7玩法类命令（加入、投票、回放）尚未开放。");
+        sender.sendMessage("§7投票选图与录像回放尚未开放。");
         sender.sendMessage("§8§m                                        ");
     }
 
@@ -94,7 +106,10 @@ public final class DisasterCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§8» §7地图       §f" + plugin.maps().all().size()
                 + " §7张，可开局 §f" + plugin.maps().playable().size() + " §7张"
                 + " §8(抽图 " + config.maps().mode().lowerName() + ")");
-        sender.sendMessage("§8» §7房间上限   §f" + config.rooms().maxRooms());
+        sender.sendMessage("§8» §7房间       §f" + plugin.rooms().rooms().size()
+                + " §7间，排队 §f" + plugin.rooms().queueSize() + " §7人"
+                + " §8(上限 " + config.rooms().maxRooms() + ")");
+        sender.sendMessage("§8» §7房间来源   §f" + plugin.provisioner().id());
         sender.sendMessage("§8» §7回放引擎   " + replayLabel);
         sender.sendMessage("§8§m                                        ");
     }
@@ -114,6 +129,13 @@ public final class DisasterCommand implements CommandExecutor, TabCompleter {
         if (args.length > 1 && args[0].equalsIgnoreCase("map")) {
             return mapCommand.complete(sender, tail(args));
         }
+        if (args.length > 1 && args[0].equalsIgnoreCase("room")) {
+            return roomCommand.complete(sender, tail(args));
+        }
+        if (args.length == 2 && (args[0].equalsIgnoreCase("join")
+                || args[0].equalsIgnoreCase("j"))) {
+            return filterByPrefix(mapIds(), args[1]);
+        }
         if (args.length != 1) {
             return List.of();
         }
@@ -121,15 +143,33 @@ public final class DisasterCommand implements CommandExecutor, TabCompleter {
         List<String> options = new ArrayList<>();
         options.add("help");
         options.add("info");
+        if (sender.hasPermission(Permissions.PLAY)) {
+            options.add("join");
+            options.add("leave");
+        }
+        if (sender.hasPermission(Permissions.ADMIN_ROOM)) {
+            options.add("room");
+        }
         if (sender.hasPermission(Permissions.ADMIN_MAP)) {
             options.add("map");
         }
         if (sender.hasPermission(Permissions.ADMIN_RELOAD)) {
             options.add("reload");
         }
+        return filterByPrefix(options, args[0]);
+    }
 
-        String prefix = args[0].toLowerCase(Locale.ROOT);
-        return options.stream().filter(s -> s.startsWith(prefix)).toList();
+    private List<String> mapIds() {
+        List<String> ids = new ArrayList<>();
+        plugin.maps().playable().forEach(map -> ids.add(map.id()));
+        return ids;
+    }
+
+    private static List<String> filterByPrefix(List<String> options, String prefix) {
+        String needle = prefix == null ? "" : prefix.toLowerCase(Locale.ROOT);
+        return options.stream()
+                .filter(option -> option.toLowerCase(Locale.ROOT).startsWith(needle))
+                .toList();
     }
 
     /** 去掉第一个参数，剩下的交给子命令。 */

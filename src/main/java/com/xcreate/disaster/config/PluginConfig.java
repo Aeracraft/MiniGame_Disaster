@@ -195,10 +195,14 @@ public final class PluginConfig {
 
         private final int maxRooms;
         private final int idleTimeoutSeconds;
+        private final int reapIntervalSeconds;
+        private final int queueLimit;
 
         private Rooms(FileConfiguration yaml) {
             this.maxRooms = Math.max(1, yaml.getInt("rooms.max-rooms", 4));
-            this.idleTimeoutSeconds = yaml.getInt("rooms.idle-timeout-seconds", 300);
+            this.idleTimeoutSeconds = Math.max(0, yaml.getInt("rooms.idle-timeout-seconds", 300));
+            this.reapIntervalSeconds = Math.max(1, yaml.getInt("rooms.reap-interval-seconds", 30));
+            this.queueLimit = Math.max(0, yaml.getInt("rooms.queue-limit", 100));
         }
 
         public int maxRooms() {
@@ -207,6 +211,20 @@ public final class PluginConfig {
 
         public int idleTimeoutSeconds() {
             return idleTimeoutSeconds;
+        }
+
+        /** 0 表示不自动回收，房间只能手动关。 */
+        public long idleTimeoutMillis() {
+            return idleTimeoutSeconds * 1000L;
+        }
+
+        public int reapIntervalSeconds() {
+            return reapIntervalSeconds;
+        }
+
+        /** 排队人数上限，0 表示不限。 */
+        public int queueLimit() {
+            return queueLimit;
         }
     }
 

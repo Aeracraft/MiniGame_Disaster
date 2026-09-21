@@ -7,10 +7,10 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 /**
- * 在会话边界上维护权限缓存。
+ * 会话边界上的清理。
  *
- * <p>退出时清掉是为了不攒内存；进入时也清一次，兜住上一轮退出事件没送到的情况
- * （上一次异常关闭之类）。</p>
+ * <p>退出时把玩家从房间里摘掉，否则他下次上线会被当成还在局里，既进不了新房间，
+ * 又占着旧房间的名额。</p>
  */
 public final class PlayerSessionListener implements Listener {
 
@@ -28,5 +28,8 @@ public final class PlayerSessionListener implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         plugin.permissions().forget(event.getPlayer().getUniqueId());
+        if (plugin.rooms() != null) {
+            plugin.rooms().leave(event.getPlayer());
+        }
     }
 }

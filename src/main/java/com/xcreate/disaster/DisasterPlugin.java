@@ -1,6 +1,7 @@
 package com.xcreate.disaster;
 
 import com.xcreate.disaster.api.replay.ReplayProvider;
+import com.xcreate.disaster.api.room.RoomProvisioner;
 import com.xcreate.disaster.command.DisasterCommand;
 import com.xcreate.disaster.compat.Platform;
 import com.xcreate.disaster.compat.ServerVersion;
@@ -13,6 +14,8 @@ import com.xcreate.disaster.permission.PermissionBridge;
 import com.xcreate.disaster.permission.PermissionCache;
 import com.xcreate.disaster.permission.PermissionService;
 import com.xcreate.disaster.permission.TitleProvider;
+import com.xcreate.disaster.room.LocalRoomProvisioner;
+import com.xcreate.disaster.room.RoomManager;
 import com.xcreate.disaster.storage.StorageManager;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -36,6 +39,8 @@ public final class DisasterPlugin extends JavaPlugin {
     private MapRegistry maps;
     private MapSelector mapSelector;
     private PermissionService permissions;
+    private RoomProvisioner provisioner;
+    private RoomManager rooms;
 
     @Override
     public void onEnable() {
@@ -83,6 +88,12 @@ public final class DisasterPlugin extends JavaPlugin {
 
         getServer().getPluginManager().registerEvents(new PlayerSessionListener(this), this);
 
+        // 有第三方注册了房间来源就用它的（跨服实现走这条路），否则用本地拷贝
+        RoomProvisioner remote = service(RoomProvisioner.class);
+        this.provisioner = remote != null && remote.available() ? remote : new LocalRoomProvisioner(this);
+        this.rooms = new RoomManager(this, maps, mapSelector, provisioner, pluginConfig);
+        this.rooms.start();
+
         registerCommands();
 
         getLogger().info("Disaster 已启用，耗时 " + (System.currentTimeMillis() - startedAt) + " ms。");
@@ -90,6 +101,10 @@ public final class DisasterPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        // 房间要先清掉：卸载世界、删副本目录都得趁服务端还在正常跑
+        if (rooms != null) {
+            rooms.shutdown();
+        }
         if (storage != null) {
             storage.close();
         }
@@ -120,6 +135,9 @@ public final class DisasterPlugin extends JavaPlugin {
         }
         if (maps != null) {
             maps.reload();
+        }
+        if (rooms != null) {
+            rooms.apply(pluginConfig);
         }
     }
 
@@ -170,5 +188,13 @@ public final class DisasterPlugin extends JavaPlugin {
 
     public PermissionService permissions() {
         return permissions;
+    }
+
+    public RoomManager rooms() {
+        return rooms;
+    }
+
+    public RoomProvisioner provisioner() {
+        return provisioner;
     }
 }
