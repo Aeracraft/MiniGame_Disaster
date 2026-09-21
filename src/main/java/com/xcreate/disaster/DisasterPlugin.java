@@ -6,6 +6,7 @@ import com.xcreate.disaster.compat.Platform;
 import com.xcreate.disaster.compat.ServerVersion;
 import com.xcreate.disaster.config.MessageService;
 import com.xcreate.disaster.config.PluginConfig;
+import com.xcreate.disaster.storage.StorageManager;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -24,6 +25,7 @@ public final class DisasterPlugin extends JavaPlugin {
     private Platform platform;
     private PluginConfig pluginConfig;
     private MessageService messages;
+    private StorageManager storage;
 
     @Override
     public void onEnable() {
@@ -53,14 +55,19 @@ public final class DisasterPlugin extends JavaPlugin {
         this.pluginConfig = PluginConfig.parse(getConfig());
         this.messages = new MessageService(this);
 
+        this.storage = new StorageManager(this, pluginConfig.storage());
+        this.storage.start();
+
         registerCommands();
 
-        // 存储层尚未接入，MySQL 初始化失败时会降级到本地 YAML
         getLogger().info("Disaster 已启用，耗时 " + (System.currentTimeMillis() - startedAt) + " ms。");
     }
 
     @Override
     public void onDisable() {
+        if (storage != null) {
+            storage.close();
+        }
         getLogger().info("Disaster 已停用。");
     }
 
@@ -114,5 +121,9 @@ public final class DisasterPlugin extends JavaPlugin {
 
     public MessageService messages() {
         return messages;
+    }
+
+    public StorageManager storage() {
+        return storage;
     }
 }

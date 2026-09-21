@@ -2,7 +2,7 @@ package com.xcreate.disaster.command;
 
 import com.xcreate.disaster.DisasterPlugin;
 import com.xcreate.disaster.api.replay.ReplayProvider;
-import com.xcreate.disaster.config.StorageType;
+import com.xcreate.disaster.storage.StorageManager;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -62,10 +62,10 @@ public final class DisasterCommand implements CommandExecutor, TabCompleter {
         var platform = plugin.platform();
         var config = plugin.pluginConfig();
 
-        String storageLabel = config.storage().type() == StorageType.MYSQL
-                ? "MySQL §7(" + config.storage().host() + ":" + config.storage().port()
-                  + "/" + config.storage().database() + ") §8[尚未实装]"
-                : "YAML";
+        StorageManager storage = plugin.storage();
+        String storageLabel = storage.degraded()
+                ? "§e" + storage.providerId() + " §7(降级：" + storage.degradedReason() + "§7)"
+                : "§a" + storage.providerId();
 
         ReplayProvider provider = plugin.replayProvider();
         String replayLabel = provider == null
@@ -79,7 +79,7 @@ public final class DisasterCommand implements CommandExecutor, TabCompleter {
                 + " §8(最低支持 " + com.xcreate.disaster.compat.ServerVersion.MIN_SUPPORTED + ")");
         sender.sendMessage("§8» §7运行平台   §f" + (platform.isPaper() ? "Paper" : "Spigot")
                 + (platform.supportsAdventure() ? " §7(Adventure 可用)" : ""));
-        sender.sendMessage("§8» §7数据存储   §f" + storageLabel);
+        sender.sendMessage("§8» §7数据存储   " + storageLabel);
         sender.sendMessage("§8» §7房间上限   §f" + config.rooms().maxRooms());
         sender.sendMessage("§8» §7回放引擎   " + replayLabel);
         sender.sendMessage("§8§m                                        ");
