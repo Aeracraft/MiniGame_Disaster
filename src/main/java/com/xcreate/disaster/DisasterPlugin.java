@@ -8,7 +8,9 @@ import com.xcreate.disaster.compat.ServerVersion;
 import com.xcreate.disaster.config.MessageService;
 import com.xcreate.disaster.config.PluginConfig;
 import com.xcreate.disaster.disaster.DisasterRegistry;
+import com.xcreate.disaster.disaster.DisasterTier;
 import com.xcreate.disaster.disaster.SpawnPlanner;
+import com.xcreate.disaster.disaster.WaveRoller;
 import com.xcreate.disaster.listener.PlayerSessionListener;
 import com.xcreate.disaster.map.MapRegistry;
 import com.xcreate.disaster.map.MapSelector;
@@ -48,6 +50,7 @@ public final class DisasterPlugin extends JavaPlugin {
     private Random matchRandom;
     private DisasterRegistry disasters;
     private SpawnPlanner spawnPlanner;
+    private WaveRoller waveRoller;
 
     @Override
     public void onEnable() {
@@ -84,6 +87,17 @@ public final class DisasterPlugin extends JavaPlugin {
         this.mapSelector = new MapSelector(pluginConfig.maps());
         int loaded = maps.reload();
         getLogger().info("地图: 载入 " + loaded + " 张，其中可开局 " + maps.playable().size() + " 张。");
+
+        this.disasters = new DisasterRegistry(this);
+        int disasterCount = disasters.reload();
+        getLogger().info("灾难: 载入 " + disasterCount + " 个，其中主灾 "
+                + disasters.byTier(DisasterTier.PRIMARY).size() + " 个、次灾 "
+                + disasters.byTier(DisasterTier.SECONDARY).size() + " 个。");
+
+        // 随机源每局开局换一次；固定种子时整局可复现
+        this.matchRandom = newMatchRandom();
+        this.spawnPlanner = new SpawnPlanner(pluginConfig, matchRandom);
+        this.waveRoller = new WaveRoller(disasters, pluginConfig, matchRandom);
 
         this.permissions = new PermissionService(
                 new PermissionCache(pluginConfig.permission().cacheTtlSeconds()),
@@ -143,9 +157,33 @@ public final class DisasterPlugin extends JavaPlugin {
         if (maps != null) {
             maps.reload();
         }
+        if (disasters != null) {
+            disasters.reload();
+        }
+        // 随机源不在这里换：重载配置不该把正在跑的对局掷骰序列打断
+        if (spawnPlanner != null) {
+            spawnPlanner.apply(pluginConfig);
+        }
+        if (waveRoller != null) {
+            waveRoller.apply(pluginConfig);
+        }
         if (rooms != null) {
             rooms.apply(pluginConfig);
         }
+    }
+
+    /** 每局开局取一次随机源。配置里固定了种子就复现同一局。 */
+    private Random newMatchRandom() {
+        return pluginConfig.disasters().hasFixedSeed()
+                ? new Random(pluginConfig.disasters().randomSeed())
+                : new Random();
+    }
+
+    /** 每局开局换一份随机源。固定了种子就每局都复现同一条序列，方便照着日志重演。 */
+    public void reseedMatchRandom() {
+        this.matchRandom = newMatchRandom();
+        this.spawnPlanner = new SpawnPlanner(pluginConfig, matchRandom);
+        this.waveRoller.reseed();
     }
 
     /**
@@ -211,6 +249,10 @@ public final class DisasterPlugin extends JavaPlugin {
 
     public SpawnPlanner spawnPlanner() {
         return spawnPlanner;
+    }
+
+    public WaveRoller waveRoller() {
+        return waveRoller;
     }
 
     /** 对局用的随机源。固定种子时整局可复现——排查「这波怎么砸成这样」不必靠运气重演。 */
