@@ -21,10 +21,14 @@ storage:
 map-selection:
   # RANDOM | VOTE | ROTATE | FIXED
   mode: RANDOM
-  # 是否允许玩家投票选图（仅 mode 为 RANDOM 时生效）
+  # 是否允许玩家投票选图（仅 mode 为 VOTE 或 RANDOM 时生效）
   allow-vote: true
   # 防止连续抽中同一张地图
   avoid-repeat: true
+  # 记住最近用过的几张图。只在内存里，重启即清空
+  avoid-repeat-history: 3
+  # 仅 mode 为 FIXED 时生效，填地图 id
+  fixed-map: ""
   # 投票时长（秒）
   vote-duration-seconds: 20
 

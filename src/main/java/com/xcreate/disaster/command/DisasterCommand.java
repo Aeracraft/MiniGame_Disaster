@@ -23,9 +23,11 @@ public final class DisasterCommand implements CommandExecutor, TabCompleter {
     private static final String PERM_ADMIN_RELOAD = "disaster.admin.reload";
 
     private final DisasterPlugin plugin;
+    private final MapCommand mapCommand;
 
     public DisasterCommand(DisasterPlugin plugin) {
         this.plugin = plugin;
+        this.mapCommand = new MapCommand(plugin);
     }
 
     @Override
@@ -40,6 +42,7 @@ public final class DisasterCommand implements CommandExecutor, TabCompleter {
             case "help", "?" -> sendHelp(sender, label);
             case "info", "version", "ver" -> sendInfo(sender);
             case "reload" -> reload(sender);
+            case "map" -> mapCommand.execute(sender, label, tail(args));
             default -> plugin.messages().send(sender, "command.unknown-subcommand", "input", args[0]);
         }
         return true;
@@ -49,8 +52,11 @@ public final class DisasterCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§8§m                                        ");
         sender.sendMessage("§6Disaster §7命令帮助");
         sender.sendMessage("§8» §f/" + label + " info §7— 查看运行环境与兼容信息");
+        if (sender.hasPermission("disaster.admin.map")) {
+            sender.sendMessage("§8» §f/" + label + " map §7— 地图管理与标点（§f" + label + " map§7）");
+        }
         if (sender.hasPermission(PERM_ADMIN_RELOAD)) {
-            sender.sendMessage("§8» §f/" + label + " reload §7— 重载配置与消息文件");
+            sender.sendMessage("§8» §f/" + label + " reload §7— 重载配置、消息与地图定义");
         }
         sender.sendMessage("§8 ");
         sender.sendMessage("§7玩法类命令（加入、投票、回放）尚未开放。");
@@ -80,6 +86,9 @@ public final class DisasterCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§8» §7运行平台   §f" + (platform.isPaper() ? "Paper" : "Spigot")
                 + (platform.supportsAdventure() ? " §7(Adventure 可用)" : ""));
         sender.sendMessage("§8» §7数据存储   " + storageLabel);
+        sender.sendMessage("§8» §7地图       §f" + plugin.maps().all().size()
+                + " §7张，可开局 §f" + plugin.maps().playable().size() + " §7张"
+                + " §8(抽图 " + config.maps().mode().lowerName() + ")");
         sender.sendMessage("§8» §7房间上限   §f" + config.rooms().maxRooms());
         sender.sendMessage("§8» §7回放引擎   " + replayLabel);
         sender.sendMessage("§8§m                                        ");
@@ -97,6 +106,9 @@ public final class DisasterCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command,
                                       String alias, String[] args) {
+        if (args.length > 1 && args[0].equalsIgnoreCase("map")) {
+            return mapCommand.complete(sender, tail(args));
+        }
         if (args.length != 1) {
             return List.of();
         }
@@ -104,12 +116,22 @@ public final class DisasterCommand implements CommandExecutor, TabCompleter {
         List<String> options = new ArrayList<>();
         options.add("help");
         options.add("info");
+        if (sender.hasPermission("disaster.admin.map")) {
+            options.add("map");
+        }
         if (sender.hasPermission(PERM_ADMIN_RELOAD)) {
             options.add("reload");
         }
 
         String prefix = args[0].toLowerCase(Locale.ROOT);
         return options.stream().filter(s -> s.startsWith(prefix)).toList();
+    }
+
+    /** 去掉第一个参数，剩下的交给子命令。 */
+    private static String[] tail(String[] args) {
+        String[] rest = new String[args.length - 1];
+        System.arraycopy(args, 1, rest, 0, rest.length);
+        return rest;
     }
 
     /** 玩家专用子命令的前置检查，非玩家时回一条提示。 */

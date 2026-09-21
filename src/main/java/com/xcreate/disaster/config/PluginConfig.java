@@ -142,20 +142,23 @@ public final class PluginConfig {
 
     public static final class Maps {
 
-        private final String mode;
+        private final MapMode mode;
         private final boolean allowVote;
         private final boolean avoidRepeat;
+        private final int avoidRepeatHistory;
+        private final String fixedMap;
         private final int voteDurationSeconds;
 
         private Maps(FileConfiguration yaml) {
-            this.mode = yaml.getString("map-selection.mode", "RANDOM");
+            this.mode = MapMode.parse(yaml.getString("map-selection.mode"));
             this.allowVote = yaml.getBoolean("map-selection.allow-vote", true);
             this.avoidRepeat = yaml.getBoolean("map-selection.avoid-repeat", true);
+            this.avoidRepeatHistory = yaml.getInt("map-selection.avoid-repeat-history", 3);
+            this.fixedMap = yaml.getString("map-selection.fixed-map", "");
             this.voteDurationSeconds = yaml.getInt("map-selection.vote-duration-seconds", 20);
         }
 
-        /** RANDOM | VOTE | ROTATE | FIXED */
-        public String mode() {
+        public MapMode mode() {
             return mode;
         }
 
@@ -165,6 +168,16 @@ public final class PluginConfig {
 
         public boolean avoidRepeat() {
             return avoidRepeat;
+        }
+
+        /** 记住最近多少张用过的图，避免连抽。 */
+        public int avoidRepeatHistory() {
+            return avoidRepeatHistory;
+        }
+
+        /** 仅 {@link MapMode#FIXED} 模式下生效。 */
+        public String fixedMap() {
+            return fixedMap == null ? "" : fixedMap;
         }
 
         public int voteDurationSeconds() {

@@ -2,9 +2,9 @@
 
 复刻 **Hypixel Disasters** 的多人灾难生存小游戏，作为 Minecraft 服务端插件运行。
 
-> **当前状态：M1「工程基建」**
-> 工程骨架已就位（构建、兼容层、配置、命令、对外契约）。**玩法尚未实装**——
-> `/ds` 目前只有 `help` / `info` / `reload` 三个诊断子命令。
+> **当前状态：M2「地图层」**
+> 工程骨架与存储层已就位，地图定义与标点已可用（`/ds map`）。**对局玩法尚未实装**——
+> `/ds` 目前只有 `help` / `info` / `reload` 与 `map` 四组子命令，加入对局、投票、回放仍未开放。
 
 ---
 
@@ -39,9 +39,49 @@
 |---|---|---|
 | `/ds help` | `disaster.command` | 命令帮助 |
 | `/ds info` | `disaster.command` | 查看运行环境与兼容信息 |
-| `/ds reload` | `disaster.admin.reload` | 重载配置与消息文件 |
+| `/ds reload` | `disaster.admin.reload` | 重载配置、消息与地图定义 |
+| `/ds map …` | `disaster.admin.map` | 地图管理与标点，见下节 |
 
 玩法类命令（加入对局、投票选图、查看战绩）将随对应里程碑开放。
+
+---
+
+## 做一张地图
+
+地图定义存在 `plugins/Disaster/maps/<id>.yml`，可以用命令标点生成，也可以直接手改文件。
+首次运行会释放一份 `_example.yml` 作为字段说明（下划线开头的文件不参与加载，可以放心留着）。
+
+**推荐流程**：在自己的模板世界里把图做好 → 加载该世界 → 用命令标点。
+
+```bash
+/ds map create city 城市          # 建定义
+/ds map pos1                      # 站在一角
+/ds map pos2                      # 站到对角
+/ds map bounds city               # 写入边界
+/ds map spawn add city 北门        # 依次标出生点（至少 2 个）
+/ds map spec city                 # 设观战点
+/ds map info city                 # 看校验结果
+```
+
+想跳过做图，直接生成一座测试城市（街道网格 + 方盒楼房，同一 id 每次生成结果一致）：
+
+```bash
+/ds map scaffold city 97
+```
+
+它会写好边界、16 个路口出生点与观战点，并把你传送过去。
+
+**几条要点**
+
+- 地图 `id` 会拼进副本世界名 `ds_<id>_<序号>`，只能用英文小写字母、数字、下划线、
+  点和连字符；中文放在 `display-name`。
+- 定义里的坐标都属于 `world` 字段指向的模板世界。开局时插件把模板世界拷成副本世界，
+  整组坐标一并挪过去，所以不必为每个副本重新标点。
+- `min-players` / `max-players` 填 `-1` 表示跟随 `config.yml` 的全局设置。
+- 某场灾难若不配 `disaster-anchors`，它的落点就是全图随机。
+
+抽图模式由 `config.yml` 的 `map-selection.mode` 决定（`RANDOM` / `VOTE` / `ROTATE` / `FIXED`），
+优先级固定为**管理员指定 > 投票 > 配置模式**；`avoid-repeat` 会避开最近用过的图。
 
 ---
 
@@ -120,8 +160,27 @@ src/main/java/com/xcreate/disaster/
 ├── DisasterPlugin.java        主类
 ├── api/                       对外契约（第三方插件依赖此包）
 │   ├── event/                 语义事件：对局开始/灾难触发/淘汰/方块变更/对局结束
-│   └── replay/                回放引擎契约（ReplayProvider）与数据载体
+│   ├── replay/                回放引擎契约（ReplayProvider）与数据载体
+│   └── storage/               存储契约（StorageProvider）与值对象
 ├── command/                   /disaster 命令
 ├── compat/                    跨版本兼容层：版本探测、平台探测、反射工具
-└── config/                    配置与消息
+├── config/                    配置与消息
+├── map/                       地图定义、标点、校验、选图、测试城市生成
+└── storage/                   存储实现：YAML / MySQL 双后端与降级
+
+src/test/java/com/xcreate/disaster/
+└── map/                       地图文件读写与选图规则的回归
 ```
+
+---
+
+## 开发
+
+```bash
+./gradlew test        # 跑单元测试
+./gradlew build       # 构建（会一并跑测试）
+```
+
+单元测试不启动服务端——地图文件读写只用到 `YamlConfiguration`，选图规则是纯逻辑。
+凡是「编译期看不出来、只会在服主机器上炸」的东西（文件格式、防连刷、降级路径）
+都应当补一条回归。

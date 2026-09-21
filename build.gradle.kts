@@ -25,6 +25,8 @@ dependencies {
     implementation("org.mariadb.jdbc:mariadb-java-client:3.5.10")
 
     // ---- 测试 ----
+    // 地图文件的读写只用到 YamlConfiguration，不需要起服务端，所以测试也挂 spigot-api。
+    testImplementation("org.spigotmc:spigot-api:1.20.4-R0.1-SNAPSHOT")
     testImplementation(platform("org.junit:junit-bom:6.0.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

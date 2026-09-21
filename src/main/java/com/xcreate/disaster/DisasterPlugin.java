@@ -6,6 +6,8 @@ import com.xcreate.disaster.compat.Platform;
 import com.xcreate.disaster.compat.ServerVersion;
 import com.xcreate.disaster.config.MessageService;
 import com.xcreate.disaster.config.PluginConfig;
+import com.xcreate.disaster.map.MapRegistry;
+import com.xcreate.disaster.map.MapSelector;
 import com.xcreate.disaster.storage.StorageManager;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -26,6 +28,8 @@ public final class DisasterPlugin extends JavaPlugin {
     private PluginConfig pluginConfig;
     private MessageService messages;
     private StorageManager storage;
+    private MapRegistry maps;
+    private MapSelector mapSelector;
 
     @Override
     public void onEnable() {
@@ -58,6 +62,11 @@ public final class DisasterPlugin extends JavaPlugin {
         this.storage = new StorageManager(this, pluginConfig.storage());
         this.storage.start();
 
+        this.maps = new MapRegistry(this);
+        this.mapSelector = new MapSelector(pluginConfig.maps());
+        int loaded = maps.reload();
+        getLogger().info("地图: 载入 " + loaded + " 张，其中可开局 " + maps.playable().size() + " 张。");
+
         registerCommands();
 
         getLogger().info("Disaster 已启用，耗时 " + (System.currentTimeMillis() - startedAt) + " ms。");
@@ -82,11 +91,17 @@ public final class DisasterPlugin extends JavaPlugin {
         command.setTabCompleter(executor);
     }
 
-    /** 重载配置与消息文件，由 {@code /ds reload} 触发。 */
+    /** 重载配置、消息文件与地图定义，由 {@code /ds reload} 触发。 */
     public void reloadAll() {
         reloadConfig();
         this.pluginConfig = PluginConfig.parse(getConfig());
         this.messages = new MessageService(this);
+        if (mapSelector != null) {
+            mapSelector.apply(pluginConfig.maps());
+        }
+        if (maps != null) {
+            maps.reload();
+        }
     }
 
     /**
@@ -125,5 +140,13 @@ public final class DisasterPlugin extends JavaPlugin {
 
     public StorageManager storage() {
         return storage;
+    }
+
+    public MapRegistry maps() {
+        return maps;
+    }
+
+    public MapSelector mapSelector() {
+        return mapSelector;
     }
 }

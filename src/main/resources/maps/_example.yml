@@ -1,0 +1,62 @@
+# 地图定义样例 —— 以 _ 开头的文件不会被加载，留着当字段说明用。
+# 复制一份改名为 <地图id>.yml 即可生效，或者直接用 /ds map 命令生成。
+#
+# 坐标全部相对下面的 world（作图时用的模板世界）。开局时插件会把模板世界拷成
+# 副本世界 ds_<id>_<序号>，并把整组坐标一并挪过去，所以这里不用关心副本名。
+
+id: example
+display-name: 样例城市
+# 模板世界目录名，位于服务端根目录下。留空则与 id 相同。
+template-folder: example
+# 作图时加载的世界名。站在图里执行 /ds map bounds <id> 会自动填上。
+world: example
+
+enabled: true
+# 随机抽图时的相对权重，1.0 是基准。
+weight: 1.0
+# -1 表示跟随 config.yml 里的全局人数设置
+min-players: -1
+max-players: -1
+
+# 地图可用范围，闭区间。灾难随机落点、出界判定都以它为准。
+bounds:
+  min-x: -64
+  min-y: 0
+  min-z: -64
+  max-x: 64
+  max-y: 96
+  max-z: 64
+
+# 玩家出生点，开局散开用。少于 2 个无法开局。
+spawns:
+  - name: 北门
+    x: 0.5
+    y: 65.0
+    z: -40.5
+  - name: 南门
+    x: 0.5
+    y: 65.0
+    z: 40.5
+    yaw: 180.0
+
+# 观战点，出局后传送到这里。
+spectator-spawn:
+  x: 0.5
+  y: 140.0
+  z: 0.5
+  pitch: 45.0
+
+# 固定落点，按灾难 id 分组。某场灾难不配就是纯随机落点。
+# 落雷是唯一始终带预警的灾难，其余默认全图随机。
+disaster-anchors:
+  meteor:
+    - name: 广场
+      x: 0.5
+      y: 70.0
+      z: 0.5
+
+# 补给箱位置。
+loot-chests:
+  - x: 20.5
+    y: 65.0
+    z: 20.5
