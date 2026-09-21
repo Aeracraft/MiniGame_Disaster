@@ -72,6 +72,12 @@ afk-detection:
   warn-threshold-seconds: 60
   action-threshold-seconds: 120
 
+permission:
+  # 权限快照缓存有效期（秒），0 表示不缓存、每次现查。
+  # 对局内的方块破坏与放置检查每 tick 要跑上百次，不缓存就每次都走一遍平台权限解析。
+  # 权限变更若能被接入的权限插件上报，缓存立即失效；没接时最多等这么久生效。
+  cache-ttl-seconds: 10
+
 webhook:
   # 只出不进：本插件不监听任何端口，仅把对局数据推送到你自建的服务。
   # 每条推送都带 HMAC 签名与时间戳；失败进入本地持久化队列并指数退避重试。

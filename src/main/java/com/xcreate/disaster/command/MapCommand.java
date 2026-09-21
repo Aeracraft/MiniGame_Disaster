@@ -10,6 +10,7 @@ import com.xcreate.disaster.map.MapPoint;
 import com.xcreate.disaster.map.MapRegistry;
 import com.xcreate.disaster.map.MapScaffold;
 import com.xcreate.disaster.map.MapSelector;
+import com.xcreate.disaster.permission.Permissions;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -38,7 +39,7 @@ import java.util.UUID;
  */
 public final class MapCommand {
 
-    private static final String PERMISSION = "disaster.admin.map";
+    private static final String PERMISSION = Permissions.ADMIN_MAP;
 
     private static final int DEFAULT_SCAFFOLD_SIZE = 97;
 

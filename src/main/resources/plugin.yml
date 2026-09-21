@@ -56,3 +56,13 @@ permissions:
   disaster.admin.debug:
     description: 调试命令（房间状态、存储状态、上报队列状态）
     default: op
+
+  disaster.bypass:
+    description: 豁免反滥用限制的总开关
+    default: op
+    children:
+      disaster.bypass.protection: true
+
+  disaster.bypass.protection:
+    description: 无视方块破坏与放置的限制
+    default: op

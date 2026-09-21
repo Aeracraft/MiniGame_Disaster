@@ -19,6 +19,7 @@ public final class PluginConfig {
     private final Disasters disasters;
     private final Afk afk;
     private final Webhook webhook;
+    private final Permission permission;
     private final boolean debug;
 
     private PluginConfig(FileConfiguration yaml) {
@@ -30,6 +31,7 @@ public final class PluginConfig {
         this.disasters = new Disasters(yaml);
         this.afk = new Afk(yaml);
         this.webhook = new Webhook(yaml);
+        this.permission = new Permission(yaml);
         this.debug = yaml.getBoolean("logging.debug", false);
     }
 
@@ -63,6 +65,10 @@ public final class PluginConfig {
 
     public Webhook webhook() {
         return webhook;
+    }
+
+    public Permission permission() {
+        return permission;
     }
 
     public boolean debug() {
@@ -329,6 +335,20 @@ public final class PluginConfig {
 
         public int actionThresholdSeconds() {
             return actionThresholdSeconds;
+        }
+    }
+
+    public static final class Permission {
+
+        private final int cacheTtlSeconds;
+
+        private Permission(FileConfiguration yaml) {
+            this.cacheTtlSeconds = Math.max(0, yaml.getInt("permission.cache-ttl-seconds", 10));
+        }
+
+        /** 权限快照缓存有效期（秒），0 表示不缓存。 */
+        public int cacheTtlSeconds() {
+            return cacheTtlSeconds;
         }
     }
 

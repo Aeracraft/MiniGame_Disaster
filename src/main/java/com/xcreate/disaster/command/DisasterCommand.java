@@ -2,6 +2,8 @@ package com.xcreate.disaster.command;
 
 import com.xcreate.disaster.DisasterPlugin;
 import com.xcreate.disaster.api.replay.ReplayProvider;
+import com.xcreate.disaster.compat.ServerVersion;
+import com.xcreate.disaster.permission.Permissions;
 import com.xcreate.disaster.storage.StorageManager;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -19,8 +21,6 @@ import java.util.Locale;
  * <p>目前只有诊断类子命令，玩法类（加入、投票、回放）等对应功能落地后再挂进来。</p>
  */
 public final class DisasterCommand implements CommandExecutor, TabCompleter {
-
-    private static final String PERM_ADMIN_RELOAD = "disaster.admin.reload";
 
     private final DisasterPlugin plugin;
     private final MapCommand mapCommand;
@@ -52,10 +52,10 @@ public final class DisasterCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§8§m                                        ");
         sender.sendMessage("§6Disaster §7命令帮助");
         sender.sendMessage("§8» §f/" + label + " info §7— 查看运行环境与兼容信息");
-        if (sender.hasPermission("disaster.admin.map")) {
+        if (sender.hasPermission(Permissions.ADMIN_MAP)) {
             sender.sendMessage("§8» §f/" + label + " map §7— 地图管理与标点（§f" + label + " map§7）");
         }
-        if (sender.hasPermission(PERM_ADMIN_RELOAD)) {
+        if (sender.hasPermission(Permissions.ADMIN_RELOAD)) {
             sender.sendMessage("§8» §f/" + label + " reload §7— 重载配置、消息与地图定义");
         }
         sender.sendMessage("§8 ");
@@ -78,13 +78,18 @@ public final class DisasterCommand implements CommandExecutor, TabCompleter {
                 ? "§8未接入 §7（一期仅预埋契约）"
                 : "§a" + provider.id();
 
+        String bridgeId = plugin.permissions().bridgeId();
+        String bridgeLabel = (bridgeId.isEmpty() ? "§7原生权限" : "§a" + bridgeId)
+                + " §8(缓存 " + config.permission().cacheTtlSeconds() + "s)";
+
         sender.sendMessage("§8§m                                        ");
         sender.sendMessage("§6Disaster §7v" + plugin.getDescription().getVersion());
         sender.sendMessage("§8» §7服务端     §f" + platform.brand());
         sender.sendMessage("§8» §7Minecraft  §f" + server
-                + " §8(最低支持 " + com.xcreate.disaster.compat.ServerVersion.MIN_SUPPORTED + ")");
+                + " §8(最低支持 " + ServerVersion.MIN_SUPPORTED + ")");
         sender.sendMessage("§8» §7运行平台   §f" + (platform.isPaper() ? "Paper" : "Spigot")
                 + (platform.supportsAdventure() ? " §7(Adventure 可用)" : ""));
+        sender.sendMessage("§8» §7权限桥接   " + bridgeLabel);
         sender.sendMessage("§8» §7数据存储   " + storageLabel);
         sender.sendMessage("§8» §7地图       §f" + plugin.maps().all().size()
                 + " §7张，可开局 §f" + plugin.maps().playable().size() + " §7张"
@@ -95,7 +100,7 @@ public final class DisasterCommand implements CommandExecutor, TabCompleter {
     }
 
     private void reload(CommandSender sender) {
-        if (!sender.hasPermission(PERM_ADMIN_RELOAD)) {
+        if (!sender.hasPermission(Permissions.ADMIN_RELOAD)) {
             plugin.messages().send(sender, "command.no-permission");
             return;
         }
@@ -116,10 +121,10 @@ public final class DisasterCommand implements CommandExecutor, TabCompleter {
         List<String> options = new ArrayList<>();
         options.add("help");
         options.add("info");
-        if (sender.hasPermission("disaster.admin.map")) {
+        if (sender.hasPermission(Permissions.ADMIN_MAP)) {
             options.add("map");
         }
-        if (sender.hasPermission(PERM_ADMIN_RELOAD)) {
+        if (sender.hasPermission(Permissions.ADMIN_RELOAD)) {
             options.add("reload");
         }
 

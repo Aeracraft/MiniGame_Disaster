@@ -6,8 +6,13 @@ import com.xcreate.disaster.compat.Platform;
 import com.xcreate.disaster.compat.ServerVersion;
 import com.xcreate.disaster.config.MessageService;
 import com.xcreate.disaster.config.PluginConfig;
+import com.xcreate.disaster.listener.PlayerSessionListener;
 import com.xcreate.disaster.map.MapRegistry;
 import com.xcreate.disaster.map.MapSelector;
+import com.xcreate.disaster.permission.PermissionBridge;
+import com.xcreate.disaster.permission.PermissionCache;
+import com.xcreate.disaster.permission.PermissionService;
+import com.xcreate.disaster.permission.TitleProvider;
 import com.xcreate.disaster.storage.StorageManager;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -30,6 +35,7 @@ public final class DisasterPlugin extends JavaPlugin {
     private StorageManager storage;
     private MapRegistry maps;
     private MapSelector mapSelector;
+    private PermissionService permissions;
 
     @Override
     public void onEnable() {
@@ -67,6 +73,16 @@ public final class DisasterPlugin extends JavaPlugin {
         int loaded = maps.reload();
         getLogger().info("地图: 载入 " + loaded + " 张，其中可开局 " + maps.playable().size() + " 张。");
 
+        this.permissions = new PermissionService(
+                new PermissionCache(pluginConfig.permission().cacheTtlSeconds()),
+                service(PermissionBridge.class),
+                service(TitleProvider.class));
+        if (!permissions.bridgeId().isEmpty()) {
+            getLogger().info("权限桥接: " + permissions.bridgeId());
+        }
+
+        getServer().getPluginManager().registerEvents(new PlayerSessionListener(this), this);
+
         registerCommands();
 
         getLogger().info("Disaster 已启用，耗时 " + (System.currentTimeMillis() - startedAt) + " ms。");
@@ -96,6 +112,9 @@ public final class DisasterPlugin extends JavaPlugin {
         reloadConfig();
         this.pluginConfig = PluginConfig.parse(getConfig());
         this.messages = new MessageService(this);
+        if (permissions != null) {
+            permissions.applyTtl(pluginConfig.permission().cacheTtlSeconds());
+        }
         if (mapSelector != null) {
             mapSelector.apply(pluginConfig.maps());
         }
@@ -110,16 +129,15 @@ public final class DisasterPlugin extends JavaPlugin {
      * <p>依赖方向单向——本插件只查服务，不认识任何具体回放实现。</p>
      */
     public ReplayProvider replayProvider() {
-        RegisteredServiceProvider<ReplayProvider> registration =
-                getServer().getServicesManager().getRegistration(ReplayProvider.class);
-        if (registration == null) {
-            return null;
-        }
-        ReplayProvider provider = registration.getProvider();
-        if (provider == null || !provider.available()) {
-            return null;
-        }
-        return provider;
+        ReplayProvider provider = service(ReplayProvider.class);
+        return provider == null || !provider.available() ? null : provider;
+    }
+
+    /** 取第三方注册的服务，没人注册时返回 null。 */
+    private <T> T service(Class<T> type) {
+        RegisteredServiceProvider<T> registration =
+                getServer().getServicesManager().getRegistration(type);
+        return registration == null ? null : registration.getProvider();
     }
 
     public ServerVersion serverVersion() {
@@ -148,5 +166,9 @@ public final class DisasterPlugin extends JavaPlugin {
 
     public MapSelector mapSelector() {
         return mapSelector;
+    }
+
+    public PermissionService permissions() {
+        return permissions;
     }
 }

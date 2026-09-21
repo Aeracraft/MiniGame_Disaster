@@ -2,9 +2,10 @@
 
 复刻 **Hypixel Disasters** 的多人灾难生存小游戏，作为 Minecraft 服务端插件运行。
 
-> **当前状态：M2「地图层」**
-> 工程骨架与存储层已就位，地图定义与标点已可用（`/ds map`）。**对局玩法尚未实装**——
-> `/ds` 目前只有 `help` / `info` / `reload` 与 `map` 四组子命令，加入对局、投票、回放仍未开放。
+> **当前状态：M2「地图与权限基建」**
+> 工程骨架、存储层（YAML / MySQL）、地图定义与标点、权限缓存与外部插件桥接骨架已就位。
+> **对局玩法尚未实装**——`/ds` 目前只有 `help` / `info` / `reload` 与 `map` 四组子命令，
+> 加入对局、投票、回放仍未开放。
 
 ---
 
@@ -43,6 +44,28 @@
 | `/ds map …` | `disaster.admin.map` | 地图管理与标点，见下节 |
 
 玩法类命令（加入对局、投票选图、查看战绩）将随对应里程碑开放。
+
+### 权限节点
+
+| 节点 | 默认 | 用途 |
+|---|---|---|
+| `disaster.command` | 所有人 | 使用 `/disaster` |
+| `disaster.play` | 所有人 | 加入对局、投票选图、查看个人战绩 |
+| `disaster.bypass` | OP | 豁免反滥用限制的总开关 |
+| `disaster.bypass.protection` | OP | 无视方块破坏与放置的限制 |
+| `disaster.admin` | OP | 全部管理命令的总开关，展开为下列四项 |
+| `disaster.admin.map` | OP | 地图管理：标点、设边界、重载定义、生成测试城市 |
+| `disaster.admin.room` | OP | 房间管理：强制开局、强制结束、踢出玩家 |
+| `disaster.admin.reload` | OP | 重载配置、消息与地图定义 |
+| `disaster.admin.debug` | OP | 调试命令：房间状态、存储状态、上报队列状态 |
+
+权限检查走服务端原生的 `hasPermission`，**天然兼容所有权限插件，不需要任何额外配置**。
+装了 LuckPerms 的服务器可以直接在 `/lp editor` 里看到上面这棵树。
+
+一个要当心的点：**LuckPerms 的通配符 `disaster.*` 会把 `disaster.admin.*` 一起给出去。**
+给普通玩家配权限时请逐个给，别用这个通配符。
+
+`disaster.bypass.*` 只豁免本插件自己施加的限制，不会绕过服务端或其它插件的保护。
 
 ---
 
@@ -87,15 +110,29 @@
 
 ## 依赖说明
 
-本插件**不强制依赖任何其它插件**。以下为可选依赖，用于启用对应能力：
+本插件**不强制依赖任何其它插件**。以下均为可选，装与不装都不影响正常使用：
 
 | 插件 | 用途 | 状态 |
 |---|---|---|
+| LuckPerms | 读取玩家称号、在权限变更时立即刷新本插件的权限缓存 | 接口已预留 |
 | WorldEdit / FastAsyncWorldEdit | 地图快照与重置（备选后端之一） | 待实装 |
 | Multiverse-Core 5.x | 世界克隆与重置（备选后端之一） | 待实装 |
 
 > 服主侧优先推荐 **FAWE** 而非 WorldEdit：WorldEdit 的插件版本矩阵不连续，
 > 而 FAWE 单个 jar 即可覆盖 1.20.4–1.21.x 全区间。
+
+### 关于 LuckPerms
+
+**装 LuckPerms 不需要任何额外配置，也不需要什么扩展。** 权限检查走服务端原生的
+`hasPermission`，LuckPerms 直接接管 `plugin.yml` 里声明的那棵树。
+
+插件额外预留了一层可选桥接（`PermissionBridge` / `TitleProvider`），用于将来接上
+权限插件独有的能力——读玩家称号、在权限变更时立即刷新权限缓存。目前**没有实现类**，
+未接入时缓存按 `permission.cache-ttl-seconds` 自然过期，功能不缺失。
+
+实现方通过 `ServicesManager` 注册，依赖方向单向：接口在本插件，实现方 `compileOnly`
+依赖本插件。**实现必须放在独立包、且只在探测到该插件时才加载**，原因写在
+`permission` 包注释里。
 
 ---
 
@@ -165,11 +202,14 @@ src/main/java/com/xcreate/disaster/
 ├── command/                   /disaster 命令
 ├── compat/                    跨版本兼容层：版本探测、平台探测、反射工具
 ├── config/                    配置与消息
+├── listener/                  事件监听，目前只有会话边界上的权限缓存维护
 ├── map/                       地图定义、标点、校验、选图、测试城市生成
+├── permission/                权限节点常量、查询缓存、外部权限插件桥接
 └── storage/                   存储实现：YAML / MySQL 双后端与降级
 
 src/test/java/com/xcreate/disaster/
-└── map/                       地图文件读写与选图规则的回归
+├── map/                       地图文件读写与选图规则的回归
+└── permission/                权限缓存有效期与失效的回归
 ```
 
 ---
@@ -181,6 +221,6 @@ src/test/java/com/xcreate/disaster/
 ./gradlew build       # 构建（会一并跑测试）
 ```
 
-单元测试不启动服务端——地图文件读写只用到 `YamlConfiguration`，选图规则是纯逻辑。
+单元测试不启动服务端——地图文件读写只用到 `YamlConfiguration`，选图与权限缓存都是纯逻辑。
 凡是「编译期看不出来、只会在服主机器上炸」的东西（文件格式、防连刷、降级路径）
 都应当补一条回归。
