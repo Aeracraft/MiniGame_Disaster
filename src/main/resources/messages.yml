@@ -20,8 +20,14 @@ game:
   queued: "{prefix}&e房间已满，你排在第 &f{position} &e位，有空位会自动拉你进去。"
   left-room: "{prefix}&7你已离开房间。"
   countdown: "{prefix}&e对局将在 &f{seconds} &e秒后开始……"
+  countdown-cancelled: "{prefix}&c人数不足，开局取消。"
   not-enough-players: "{prefix}&c人数不足，至少需要 &f{required} &c人。"
-  match-ended: "{prefix}&6对局结束！存活者：&f{survivors}"
+  match-started: "{prefix}&6对局开始，活到最后。"
+  wave: "{prefix}&c第 &f{wave} &c波：&f{disasters}"
+  eliminated: "{prefix}&c你被淘汰了（&f{cause}&c），接下来可以旁观。"
+  spectating: "{prefix}&7你正在旁观这一局。"
+  match-ended: "{prefix}&6对局结束！用时 &f{seconds} &6秒，存活：&f{survivors}"
+  no-survivors: "{prefix}&7对局结束，本局无人存活。"
 
 room:
   not-found: "{prefix}&c找不到房间 &f{room}&c，用 &f/ds room list &c看看现有房间。"

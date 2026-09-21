@@ -7,13 +7,16 @@ import com.xcreate.disaster.compat.Platform;
 import com.xcreate.disaster.compat.ServerVersion;
 import com.xcreate.disaster.config.MessageService;
 import com.xcreate.disaster.config.PluginConfig;
+import com.xcreate.disaster.disaster.DisasterEffects;
 import com.xcreate.disaster.disaster.DisasterRegistry;
 import com.xcreate.disaster.disaster.DisasterTier;
 import com.xcreate.disaster.disaster.SpawnPlanner;
 import com.xcreate.disaster.disaster.WaveRoller;
+import com.xcreate.disaster.listener.MatchListener;
 import com.xcreate.disaster.listener.PlayerSessionListener;
 import com.xcreate.disaster.map.MapRegistry;
 import com.xcreate.disaster.map.MapSelector;
+import com.xcreate.disaster.match.MatchDirector;
 import com.xcreate.disaster.permission.PermissionBridge;
 import com.xcreate.disaster.permission.PermissionCache;
 import com.xcreate.disaster.permission.PermissionService;
@@ -21,6 +24,7 @@ import com.xcreate.disaster.permission.TitleProvider;
 import com.xcreate.disaster.room.LocalRoomProvisioner;
 import com.xcreate.disaster.room.RoomManager;
 import com.xcreate.disaster.storage.StorageManager;
+import com.xcreate.disaster.world.BlockWriter;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -42,6 +46,7 @@ public final class DisasterPlugin extends JavaPlugin {
     private PluginConfig pluginConfig;
     private MessageService messages;
     private StorageManager storage;
+    private BlockWriter blocks;
     private MapRegistry maps;
     private MapSelector mapSelector;
     private PermissionService permissions;
@@ -51,6 +56,8 @@ public final class DisasterPlugin extends JavaPlugin {
     private DisasterRegistry disasters;
     private SpawnPlanner spawnPlanner;
     private WaveRoller waveRoller;
+    private DisasterEffects effects;
+    private MatchDirector matches;
 
     @Override
     public void onEnable() {
@@ -80,6 +87,10 @@ public final class DisasterPlugin extends JavaPlugin {
         this.pluginConfig = PluginConfig.parse(getConfig());
         this.messages = new MessageService(this);
 
+        // 所有方块变更的唯一入口，得在灾难与地图施工之前就绪
+        this.blocks = new BlockWriter(this);
+        this.blocks.start();
+
         this.storage = new StorageManager(this, pluginConfig.storage());
         this.storage.start();
 
@@ -98,6 +109,7 @@ public final class DisasterPlugin extends JavaPlugin {
         this.matchRandom = newMatchRandom();
         this.spawnPlanner = new SpawnPlanner(pluginConfig, matchRandom);
         this.waveRoller = new WaveRoller(disasters, pluginConfig, matchRandom);
+        this.effects = DisasterEffects.builtin();
 
         this.permissions = new PermissionService(
                 new PermissionCache(pluginConfig.permission().cacheTtlSeconds()),
@@ -115,6 +127,10 @@ public final class DisasterPlugin extends JavaPlugin {
         this.rooms = new RoomManager(this, maps, mapSelector, provisioner, pluginConfig);
         this.rooms.start();
 
+        this.matches = new MatchDirector(this, rooms, effects, pluginConfig);
+        getServer().getPluginManager().registerEvents(new MatchListener(this, rooms, matches), this);
+        this.matches.start();
+
         registerCommands();
 
         getLogger().info("Disaster 已启用，耗时 " + (System.currentTimeMillis() - startedAt) + " ms。");
@@ -123,8 +139,15 @@ public final class DisasterPlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         // 房间要先清掉：卸载世界、删副本目录都得趁服务端还在正常跑
+        // 运行循环得先停，否则它会对着正在卸载的世界继续推进对局
+        if (matches != null) {
+            matches.stop();
+        }
         if (rooms != null) {
             rooms.shutdown();
+        }
+        if (blocks != null) {
+            blocks.stop();
         }
         if (storage != null) {
             storage.close();
@@ -169,6 +192,9 @@ public final class DisasterPlugin extends JavaPlugin {
         }
         if (rooms != null) {
             rooms.apply(pluginConfig);
+        }
+        if (matches != null) {
+            matches.apply(pluginConfig);
         }
     }
 
@@ -223,6 +249,11 @@ public final class DisasterPlugin extends JavaPlugin {
         return storage;
     }
 
+    /** 方块变更入口。任何要改世界方块的代码都必须走它，别直接 setType。 */
+    public BlockWriter blocks() {
+        return blocks;
+    }
+
     public MapRegistry maps() {
         return maps;
     }
@@ -253,6 +284,16 @@ public final class DisasterPlugin extends JavaPlugin {
 
     public WaveRoller waveRoller() {
         return waveRoller;
+    }
+
+    /** 已实现的灾种效果。没登记的灾种掷中后只落点、不动方块。 */
+    public DisasterEffects effects() {
+        return effects;
+    }
+
+    /** 对局运行循环。 */
+    public MatchDirector matches() {
+        return matches;
     }
 
     /** 对局用的随机源。固定种子时整局可复现——排查「这波怎么砸成这样」不必靠运气重演。 */

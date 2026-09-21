@@ -3,9 +3,10 @@ display-name: 地陷
 tier: PRIMARY
 enabled: true
 weight: 0.75
-# 随机一处开始塌，向外扩散交给运行时
 spawn-strategy: RANDOM_IN_BOUNDS
 point-count: 1
 options:
-  # 影响半径（格）
+  # 坑的半径（格），坑沿在半径处收平
   radius: 8
+  # 坑心处往下挖几格，越靠边越浅
+  depth: 4

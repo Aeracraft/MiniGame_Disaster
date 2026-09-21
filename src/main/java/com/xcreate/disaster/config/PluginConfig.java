@@ -20,6 +20,7 @@ public final class PluginConfig {
     private final Afk afk;
     private final Webhook webhook;
     private final Permission permission;
+    private final String serverId;
     private final boolean debug;
 
     private PluginConfig(FileConfiguration yaml) {
@@ -32,6 +33,7 @@ public final class PluginConfig {
         this.afk = new Afk(yaml);
         this.webhook = new Webhook(yaml);
         this.permission = new Permission(yaml);
+        this.serverId = yaml.getString("server-id", "");
         this.debug = yaml.getBoolean("logging.debug", false);
     }
 
@@ -69,6 +71,11 @@ public final class PluginConfig {
 
     public Permission permission() {
         return permission;
+    }
+
+    /** 这台子服的标识。单服部署可以留空，多子服共用一套存储时用来区分数据来源。 */
+    public String serverId() {
+        return serverId;
     }
 
     public boolean debug() {
@@ -234,6 +241,7 @@ public final class PluginConfig {
         private final int maxPlayers;
         private final int prepareSeconds;
         private final int waveIntervalSeconds;
+        private final int matchDurationSeconds;
         private final int primaryPerWave;
         private final double secondaryDisasterChance;
         private final boolean naturalRegeneration;
@@ -246,6 +254,7 @@ public final class PluginConfig {
             this.maxPlayers = yaml.getInt("game.max-players", 16);
             this.prepareSeconds = yaml.getInt("game.prepare-seconds", 10);
             this.waveIntervalSeconds = yaml.getInt("game.wave-interval-seconds", 60);
+            this.matchDurationSeconds = yaml.getInt("game.match-duration-seconds", 600);
             this.primaryPerWave = Math.max(1, yaml.getInt("game.primary-per-wave", 1));
             this.secondaryDisasterChance = yaml.getDouble("game.secondary-disaster-chance", 0.5);
             this.naturalRegeneration = yaml.getBoolean("game.modifiers.natural-regeneration", false);
@@ -268,6 +277,11 @@ public final class PluginConfig {
 
         public int waveIntervalSeconds() {
             return waveIntervalSeconds;
+        }
+
+        /** 一局打多久（秒）。到点结算，存活者获胜；可多人同胜，也可能无人获胜。 */
+        public int matchDurationSeconds() {
+            return matchDurationSeconds;
         }
 
         public double secondaryDisasterChance() {

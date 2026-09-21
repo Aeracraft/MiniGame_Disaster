@@ -125,6 +125,10 @@ public final class DisasterRootCommand implements CommandExecutor, TabCompleter 
                 + " §7次"
                 + " §8(每波 " + config.game().primaryPerWave() + " 主，次灾 "
                 + Math.round(config.game().secondaryDisasterChance() * 100) + "%)");
+        sender.sendMessage("§8» §7灾难效果   §f" + plugin.effects().ids().size()
+                + " §7个已实现 §8(" + String.join("、", plugin.effects().ids()) + ")");
+        sender.sendMessage("§8» §7对局       §f" + plugin.matches().activeMatches().size()
+                + " §7局进行中 §8(单局 " + config.game().matchDurationSeconds() + " 秒)");
         sender.sendMessage("§8» §7回放引擎   " + replayLabel);
         sender.sendMessage("§8§m                                        ");
     }

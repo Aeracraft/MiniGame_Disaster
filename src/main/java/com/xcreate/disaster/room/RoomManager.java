@@ -302,6 +302,12 @@ public final class RoomManager {
             return false;
         }
         membership.put(player.getUniqueId(), room.id());
+        // 有人了就从「空闲待加入」进入「等人开局」。
+        // 不切的话房间表面上是空的、实际有人，运行循环不会开局，回收器也会一直盯着它。
+        // 世界还没拷好的房间保持 CREATING，那份状态由创建回调按「有没有人」决定落点。
+        if (room.is(RoomState.IDLE)) {
+            room.transition(RoomState.WAITING);
+        }
         teleport(room, player, room.size() - 1);
         return true;
     }

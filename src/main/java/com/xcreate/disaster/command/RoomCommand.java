@@ -171,6 +171,11 @@ public final class RoomCommand {
         sender.sendMessage("§8» §7存在     §f" + uptime(room));
         sender.sendMessage("§8» §7目录     " + folder);
         sender.sendMessage("§8» §7在座     §f" + memberNames(room));
+        plugin.matches().matchOf(room.id()).ifPresent(match -> sender.sendMessage(
+                "§8» §7对局     §f" + match.matchId() + " §7第 §f" + match.waveIndex()
+                        + " §7波，存活 §f" + match.alive().size() + "/"
+                        + match.participants().size() + " §8("
+                        + match.elapsedSeconds(System.currentTimeMillis()) + "s)"));
         if (!room.note().isEmpty()) {
             sender.sendMessage("§8» §7备注     §c" + room.note());
         }
