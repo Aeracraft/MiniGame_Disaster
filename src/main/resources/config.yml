@@ -51,6 +51,8 @@ game:
   prepare-seconds: 10
   # 每波灾难掷骰间隔（秒）
   wave-interval-seconds: 60
+  # 每波必出几个主灾难。一般 1，调高就是混沌局
+  primary-per-wave: 1
   # 次灾难触发概率
   secondary-disaster-chance: 0.5
 

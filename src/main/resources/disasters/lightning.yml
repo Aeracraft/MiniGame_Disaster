@@ -1,0 +1,11 @@
+id: lightning
+display-name: 落雷
+tier: PRIMARY
+enabled: true
+weight: 1.0
+# 劈高处。玩家附近的落雷由运行时行为补，那条路必须留预警
+spawn-strategy: HIGH_POINTS
+point-count: 8
+options:
+  # 每次采样多少列来找高点。越大越准，代价也跟着涨
+  samples: 48

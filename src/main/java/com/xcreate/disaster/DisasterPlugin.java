@@ -2,11 +2,13 @@ package com.xcreate.disaster;
 
 import com.xcreate.disaster.api.replay.ReplayProvider;
 import com.xcreate.disaster.api.room.RoomProvisioner;
-import com.xcreate.disaster.command.DisasterCommand;
+import com.xcreate.disaster.command.DisasterRootCommand;
 import com.xcreate.disaster.compat.Platform;
 import com.xcreate.disaster.compat.ServerVersion;
 import com.xcreate.disaster.config.MessageService;
 import com.xcreate.disaster.config.PluginConfig;
+import com.xcreate.disaster.disaster.DisasterRegistry;
+import com.xcreate.disaster.disaster.SpawnPlanner;
 import com.xcreate.disaster.listener.PlayerSessionListener;
 import com.xcreate.disaster.map.MapRegistry;
 import com.xcreate.disaster.map.MapSelector;
@@ -20,6 +22,8 @@ import com.xcreate.disaster.storage.StorageManager;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.Random;
 
 /**
  * 插件入口。
@@ -41,6 +45,9 @@ public final class DisasterPlugin extends JavaPlugin {
     private PermissionService permissions;
     private RoomProvisioner provisioner;
     private RoomManager rooms;
+    private Random matchRandom;
+    private DisasterRegistry disasters;
+    private SpawnPlanner spawnPlanner;
 
     @Override
     public void onEnable() {
@@ -117,7 +124,7 @@ public final class DisasterPlugin extends JavaPlugin {
             getLogger().warning("plugin.yml 中未声明 disaster 命令，/ds 将不可用。");
             return;
         }
-        DisasterCommand executor = new DisasterCommand(this);
+        DisasterRootCommand executor = new DisasterRootCommand(this);
         command.setExecutor(executor);
         command.setTabCompleter(executor);
     }
@@ -196,5 +203,18 @@ public final class DisasterPlugin extends JavaPlugin {
 
     public RoomProvisioner provisioner() {
         return provisioner;
+    }
+
+    public DisasterRegistry disasters() {
+        return disasters;
+    }
+
+    public SpawnPlanner spawnPlanner() {
+        return spawnPlanner;
+    }
+
+    /** 对局用的随机源。固定种子时整局可复现——排查「这波怎么砸成这样」不必靠运气重演。 */
+    public Random matchRandom() {
+        return matchRandom;
     }
 }

@@ -38,6 +38,7 @@ permissions:
     children:
       disaster.admin.map: true
       disaster.admin.room: true
+      disaster.admin.disaster: true
       disaster.admin.reload: true
       disaster.admin.debug: true
 
@@ -47,6 +48,10 @@ permissions:
 
   disaster.admin.room:
     description: 房间管理（强制开局、强制结束、踢出玩家）
+    default: op
+
+  disaster.admin.disaster:
+    description: 灾难管理（灾种列表与详情、干跑掷骰、落点预演）
     default: op
 
   disaster.admin.reload:

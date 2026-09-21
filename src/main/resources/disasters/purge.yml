@@ -1,0 +1,8 @@
+id: purge
+display-name: 混战
+tier: SECONDARY
+enabled: true
+weight: 1.0
+# 只改规则（开 PvP、剩半数存活即结束），没有落点
+spawn-strategy: NONE
+point-count: 0

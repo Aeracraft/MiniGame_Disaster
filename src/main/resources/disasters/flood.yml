@@ -1,0 +1,8 @@
+id: flood
+display-name: 洪水
+tier: PRIMARY
+enabled: true
+weight: 0.75
+# 水位整体上升，全图生效，没有落点
+spawn-strategy: NONE
+point-count: 0

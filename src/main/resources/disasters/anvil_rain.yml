@@ -1,0 +1,11 @@
+id: anvil_rain
+display-name: 铁砧雨
+tier: SECONDARY
+enabled: true
+weight: 1.0
+# 集中在某个玩家头顶一片，不像流星雨那样铺满全图
+spawn-strategy: NEAR_PLAYER
+point-count: 5
+options:
+  # 散落半径（格）
+  radius: 10

@@ -2,10 +2,12 @@
 
 复刻 **Hypixel Disasters** 的多人灾难生存小游戏，作为 Minecraft 服务端插件运行。
 
-> **当前状态：M2「地图、权限与房间基建」**
+> **当前状态：M2「地图、权限、房间与灾难基建」**
 > 工程骨架、存储层（YAML / MySQL）、地图定义与标点、权限缓存与外部插件桥接骨架、
-> 房间系统（副本世界拷贝、分流、排队、回收）已就位。
-> **对局玩法尚未实装**——`/ds join` 能进房间、能看到副本世界，但灾难与胜负判定还没有。
+> 房间系统（副本世界拷贝、分流、排队、回收）、灾难系统（注册表、加权掷骰、落点规划与校验）
+> 已就位。
+> **对局玩法尚未实装**——`/ds join` 能进房间、能看到副本世界，`/ds disaster roll` 能看抽到什么灾，
+> 但灾难**还不会真的砸下来**，胜负判定也没有。
 > 投票选图、个人战绩、录像回放同样未开放。
 
 ---
@@ -46,6 +48,7 @@
 | `/ds room …` | `disaster.admin.room` | 房间管理，见下节 |
 | `/ds reload` | `disaster.admin.reload` | 重载配置、消息与地图定义 |
 | `/ds map …` | `disaster.admin.map` | 地图管理与标点，见下节 |
+| `/ds disaster …` | `disaster.admin.disaster` | 灾难管理与掷骰预演，见下节 |
 
 投票选图、个人战绩与录像回放将随对应里程碑开放。
 
@@ -57,8 +60,9 @@
 | `disaster.play` | 所有人 | 加入对局、投票选图、查看个人战绩 |
 | `disaster.bypass` | OP | 豁免反滥用限制的总开关 |
 | `disaster.bypass.protection` | OP | 无视方块破坏与放置的限制 |
-| `disaster.admin` | OP | 全部管理命令的总开关，展开为下列四项 |
+| `disaster.admin` | OP | 全部管理命令的总开关，展开为下列五项 |
 | `disaster.admin.map` | OP | 地图管理：标点、设边界、重载定义、生成测试城市 |
+| `disaster.admin.disaster` | OP | 灾难管理：查看定义、掷骰预演、重载灾难定义 |
 | `disaster.admin.room` | OP | 房间管理：强制开局、强制结束、踢出玩家 |
 | `disaster.admin.reload` | OP | 重载配置、消息与地图定义 |
 | `disaster.admin.debug` | OP | 调试命令：房间状态、存储状态、上报队列状态 |
@@ -181,6 +185,78 @@
 
 ---
 
+## 灾难系统
+
+灾难定义存在 `plugins/Disaster/disasters/<id>.yml`，**一灾一文件**。首次运行会把内置的
+10 个灾难释放出来，另附一份 `_example.yml` 作为字段说明（下划线开头的文件不参与加载）。
+
+> 目前的进度到「**掷骰 + 落点规划**」为止：能确定这一波抽到哪些灾难、它们会落在哪里，
+> 但落点之后的效果（砸方块、生成怪、水位变化）还没有实装。`/ds disaster roll` 与
+> `/ds disaster try` 就是用来单独看这两步的。
+
+### 内置灾难
+
+| id | 名称 | 层级 | 落点方式 |
+|---|---|---|---|
+| `meteor_shower` | 流星雨 | 主灾 | 每个玩家周围 |
+| `lightning` | 落雷 | 主灾 | 制高点 |
+| `sinkhole` | 地陷 | 主灾 | 边界内随机 |
+| `tornado` | 龙卷风 | 主灾 | 从边界推进 |
+| `flood` | 洪水 | 主灾 | 全图 |
+| `acid_rain` | 酸雨 | 主灾 | 全图 |
+| `zombie_apocalypse` | 僵尸潮 | 主灾 | 每个玩家周围 |
+| `floor_is_lava` | 脚下岩浆 | 主灾 | 全图 |
+| `anvil_rain` | 铁砧雨 | 次灾 | 玩家附近 |
+| `purge` | 混战 | 次灾 | 全图 |
+
+### 每波掷什么
+
+每波**必定**抽 `game.primary-per-wave` 个主灾（默认 1 个），另有
+`disaster.secondary-disaster-chance` 的概率抽一个次灾。正在持续的灾难会从候选池里剔除，
+所以不会同时叠两个洪水；主灾与次灾也互不越界。
+
+抽取是**加权不放回**的：权重高的更容易被抽中，但一波之内不会重复。
+单个灾难的权重超过 `disaster.weight-cap`（默认 1.75）会被截断，避免某个灾难长期霸榜。
+
+把 `disaster.random-seed` 固定成一个值，整局的抽取结果就完全可复现（排查问题很有用）；
+留空则每局随机。
+
+### 落点
+
+落点方式写在灾难的 `strategy` 字段，共七种：
+
+| 值 | 含义 |
+|---|---|
+| `NONE` | 全图生效，不产生落点（酸雨、洪水、脚下岩浆、混战） |
+| `RANDOM_IN_BOUNDS` | 边界内随机 |
+| `NEAR_PLAYER` | 玩家附近 |
+| `HIGH_POINTS` | 制高点 |
+| `AROUND_EACH_PLAYER` | 每个玩家周围各若干处 |
+| `FROM_EDGE` | 从边界向里推进 |
+| `AT_MAP_CENTER` | 地图中心 |
+
+每个落点在定下来之前会依次过一遍校验：**在边界内 → 有实心地面 → 离出生点够远 →
+跟已有落点不挤**。不通过就换个位置重抽，每个落点最多重抽 `disaster.max-retries` 次
+（默认 20 次）。**实在凑不满就少落几个，绝不会把东西砸到图外或出生点上。**
+
+要让某场灾难固定砸在指定位置，可以在灾难文件里写 `anchors`，或在地图定义里写
+`disaster-anchors`。固定落点只校验边界与地面，不参与间距判定。
+
+### 管理员命令
+
+```bash
+/ds disaster list                # 列出全部灾难：层级、权重、落点方式、启用状态
+/ds disaster info <灾种>         # 单个灾难的完整参数
+/ds disaster roll [次数]         # 干跑掷骰，只看抽到什么，什么都不生成
+/ds disaster try <灾种> [地图]   # 落点预演，看它会砸在哪，不改动任何方块
+/ds disaster reload              # 重新读取灾难定义
+```
+
+`roll` 与 `try` 都是**只读**的：前者用独立的随机数源，不会影响正在进行的对局；
+后者只读地形，不动任何方块。调灾难参数时用这两条命令比开一局试要快得多。
+
+---
+
 ## 依赖说明
 
 本插件**不强制依赖任何其它插件**。以下均为可选，装与不装都不影响正常使用：
@@ -273,16 +349,25 @@ src/main/java/com/xcreate/disaster/
 │   ├── replay/                回放引擎契约（ReplayProvider）与数据载体
 │   ├── room/                  房间来源契约（RoomProvisioner）
 │   └── storage/               存储契约（StorageProvider）与值对象
-├── command/                   /disaster 命令：地图、房间与诊断
+├── command/                   /disaster 命令：地图、房间、灾难与诊断
 ├── compat/                    跨版本兼容层：版本探测、平台探测、反射工具
 ├── config/                    配置与消息
+├── disaster/                  灾难：定义与注册表、加权掷骰、落点策略与校验链
 ├── listener/                  事件监听：会话边界上的权限缓存与房间成员维护
 ├── map/                       地图定义、标点、校验、选图、测试城市生成
 ├── permission/                权限节点常量、查询缓存、外部权限插件桥接
 ├── room/                      房间：状态机、分流与排队、副本世界拷贝与回收
 └── storage/                   存储实现：YAML / MySQL 双后端与降级
 
+src/main/resources/
+├── config.yml                 配置模板
+├── messages.yml               消息模板
+├── plugin.yml                 命令与权限声明
+├── maps/_example.yml          地图定义样例（首次运行释放）
+└── disasters/                 10 个内置灾难定义 + _example.yml
+
 src/test/java/com/xcreate/disaster/
+├── disaster/                  灾种读写、掷骰规则、落点校验与规划的回归
 ├── map/                       地图文件读写与选图规则的回归
 ├── permission/                权限缓存有效期与失效的回归
 └── room/                      房间命名、状态转换、成员与排队的回归
@@ -297,9 +382,12 @@ src/test/java/com/xcreate/disaster/
 ./gradlew build       # 构建（会一并跑测试）
 ```
 
-单元测试不启动服务端——地图文件读写只用到 `YamlConfiguration`，选图、权限缓存、
-房间的状态与分流都是纯逻辑。凡是「编译期看不出来、只会在服主机器上炸」的东西
-（文件格式、防连刷、降级路径、状态机）都应当补一条回归。
+单元测试不启动服务端——地图与灾难定义读写只用到 `YamlConfiguration`，选图、权限缓存、
+房间的状态与分流、掷骰与落点校验都是纯逻辑。凡是「编译期看不出来、只会在服主机器上炸」
+的东西（文件格式、防连刷、降级路径、状态机）都应当补一条回归。
+
+目前的覆盖共 **114 例**：`disaster` 43、`map` 19、`permission` 9、`room` 43。
+随机相关的用例都用固定种子，失败可以直接重演。
 
 涉及真实世界的部分（拷贝目录、加载与卸载世界、玩家传送）**没法单测**，
 改动时请上测试服验证。

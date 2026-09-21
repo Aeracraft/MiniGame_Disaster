@@ -234,6 +234,7 @@ public final class PluginConfig {
         private final int maxPlayers;
         private final int prepareSeconds;
         private final int waveIntervalSeconds;
+        private final int primaryPerWave;
         private final double secondaryDisasterChance;
         private final boolean naturalRegeneration;
         private final boolean fallDamage;
@@ -245,6 +246,7 @@ public final class PluginConfig {
             this.maxPlayers = yaml.getInt("game.max-players", 16);
             this.prepareSeconds = yaml.getInt("game.prepare-seconds", 10);
             this.waveIntervalSeconds = yaml.getInt("game.wave-interval-seconds", 60);
+            this.primaryPerWave = Math.max(1, yaml.getInt("game.primary-per-wave", 1));
             this.secondaryDisasterChance = yaml.getDouble("game.secondary-disaster-chance", 0.5);
             this.naturalRegeneration = yaml.getBoolean("game.modifiers.natural-regeneration", false);
             this.fallDamage = yaml.getBoolean("game.modifiers.fall-damage", true);
@@ -272,6 +274,11 @@ public final class PluginConfig {
             return secondaryDisasterChance;
         }
 
+        /** 每波必出几个主灾难。一般 1 个，调高就是混沌局。 */
+        public int primaryPerWave() {
+            return primaryPerWave;
+        }
+
         public boolean naturalRegeneration() {
             return naturalRegeneration;
         }
@@ -292,6 +299,7 @@ public final class PluginConfig {
     public static final class Disasters {
 
         private final long randomSeed;
+        private final double weightCap;
         private final int lightningWarningTicks;
         private final int minDistanceFromSpawn;
         private final int minDistanceBetweenPoints;
@@ -299,6 +307,7 @@ public final class PluginConfig {
 
         private Disasters(FileConfiguration yaml) {
             this.randomSeed = yaml.getLong("disaster.random-seed", -1L);
+            this.weightCap = yaml.getDouble("disaster.weight-cap", 1.75);
             this.lightningWarningTicks = yaml.getInt("disaster.lightning-warning-ticks", 30);
             this.minDistanceFromSpawn = yaml.getInt("disaster.spawn-validation.min-distance-from-spawn", 8);
             this.minDistanceBetweenPoints = yaml.getInt("disaster.spawn-validation.min-distance-between-points", 3);
@@ -312,6 +321,11 @@ public final class PluginConfig {
 
         public boolean hasFixedSeed() {
             return randomSeed >= 0;
+        }
+
+        /** 掷骰时权重按这个上限截断，0 或负数表示不限制。 */
+        public double weightCap() {
+            return weightCap;
         }
 
         public int lightningWarningTicks() {

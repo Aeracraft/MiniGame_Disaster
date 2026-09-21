@@ -1,0 +1,12 @@
+id: meteor_shower
+display-name: 流星雨
+tier: PRIMARY
+enabled: true
+weight: 1.0
+# 围着每个玩家散落，火流星追着人砸
+spawn-strategy: AROUND_EACH_PLAYER
+# 每人几个落点
+point-count: 4
+options:
+  # 散落半径（格）
+  radius: 12

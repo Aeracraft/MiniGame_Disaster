@@ -1,0 +1,11 @@
+id: tornado
+display-name: 龙卷风
+tier: PRIMARY
+enabled: true
+weight: 0.75
+# 从图边进来，之后逐 tick 推进
+spawn-strategy: FROM_EDGE
+point-count: 1
+options:
+  # 贴边的宽度（格）
+  edge-width: 12

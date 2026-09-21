@@ -1,0 +1,12 @@
+id: zombie_apocalypse
+display-name: 僵尸潮
+tier: PRIMARY
+enabled: true
+weight: 1.0
+# 刷在玩家附近追着人打
+spawn-strategy: AROUND_EACH_PLAYER
+# 每人几个刷新点
+point-count: 3
+options:
+  # 刷新半径（格）
+  radius: 10

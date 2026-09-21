@@ -1,0 +1,43 @@
+# 灾种定义的字段说明。本文件以 _ 开头，不会被当定义加载，可以直接照抄一份改名使用。
+#
+# 文件名就是 id，必须是英文小写字母、数字与下划线（会进日志、上报数据与地图的灾难固定落点表）。
+# 文件里写 id 只是为了阅读方便，与文件名不符时以文件名为准。
+
+# 展示名，可以写中文
+display-name: 示例灾难
+
+# PRIMARY 每波必出，SECONDARY 只在掷骰命中概率时伴随出现
+tier: PRIMARY
+
+# 关掉后不参与掷骰，候选池会少一个
+enabled: true
+
+# 掷骰时的相对权重。同层之间按权重比例抽，与另一层无关
+weight: 1.0
+
+# 落点怎么取：
+#   NONE              全图生效或跟随玩家，不产生落点（酸雨、洪水、脚下岩浆、混战）
+#   RANDOM_IN_BOUNDS  边界内均匀随机（地陷）
+#   NEAR_PLAYER       集中在一名随机玩家附近，point-count 是总点数（铁砧雨）
+#   HIGH_POINTS       地图高处（落雷）
+#   AROUND_EACH_PLAYER 每名玩家附近各取几个，point-count 是每人几个（流星雨、僵尸潮）
+#   FROM_EDGE         贴着边界的一圈，用于从图外涌入的灾难（龙卷风）
+#   AT_MAP_CENTER     地图正中心，多点时在中心周围散开
+spawn-strategy: RANDOM_IN_BOUNDS
+
+# 一次产生几个落点。AROUND_EACH_PLAYER 时表示每人几个
+point-count: 1
+
+# 各灾种自己的参数，取不到就用代码里的默认值。目前落点阶段认得这三个：
+options:
+  # NEAR_PLAYER / AROUND_EACH_PLAYER / AT_MAP_CENTER 的散落半径（格），默认 8
+  radius: 8
+  # FROM_EDGE 的贴边宽度（格），默认 8
+  edge-width: 8
+  # HIGH_POINTS 每次采样多少列来找高点，默认 24。采样越多越准，代价也越高
+  samples: 24
+
+# 想给某个灾种指定固定落点，写在对应地图定义里，不在本文件：
+#   /ds map anchor <地图> <灾种 id>        —— 站在目标位置执行
+# 标了固定落点的灾种在开局时直接用那些点，不再随机。固定点只查边界与地面，不查间距——
+# 那是服主自己摆的位置。
