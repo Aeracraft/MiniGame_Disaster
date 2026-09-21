@@ -14,10 +14,9 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * {@code /disaster}（别名 {@code /ds}）的主命令分发器。
+ * {@code /disaster} 的命令分发器。
  *
- * <p>M1 只实现诊断类子命令。玩法类子命令（加入、投票、看回放等）随对应里程碑补齐，
- * 此处先不暴露，避免玩家以为功能坏了。</p>
+ * <p>目前只有诊断类子命令，玩法类（加入、投票、回放）等对应功能落地后再挂进来。</p>
  */
 public final class DisasterCommand implements CommandExecutor, TabCompleter {
 
@@ -54,7 +53,7 @@ public final class DisasterCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("§8» §f/" + label + " reload §7— 重载配置与消息文件");
         }
         sender.sendMessage("§8 ");
-        sender.sendMessage("§7玩法类命令（加入、投票、回放）将随对应里程碑开放。");
+        sender.sendMessage("§7玩法类命令（加入、投票、回放）尚未开放。");
         sender.sendMessage("§8§m                                        ");
     }
 
@@ -113,7 +112,7 @@ public final class DisasterCommand implements CommandExecutor, TabCompleter {
         return options.stream().filter(s -> s.startsWith(prefix)).toList();
     }
 
-    /** 供后续里程碑判断「命令是否由玩家发出」。 */
+    /** 玩家专用子命令的前置检查，非玩家时回一条提示。 */
     @SuppressWarnings("unused")
     private boolean requirePlayer(CommandSender sender) {
         if (sender instanceof Player) {

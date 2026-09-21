@@ -7,13 +7,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 一局开始。
+ * 一局开始，{@code players} 是这一局的全体参与者。
  *
- * <p>语义事件：玩法插件用「事实层」的语言描述游戏里发生了什么，不含任何平台知识。
- * 监听者据此自行决定要做什么——录像、上报、统计，都与本插件无关。</p>
- *
- * <p><b>线程约定</b>：在主线程触发。监听者若需要做 I/O，必须自行异步化，
- * 绝不允许阻塞主线程。</p>
+ * <p>主线程触发。监听者若要做 I/O 请自行异步化，别阻塞主线程。</p>
  */
 public class DisasterMatchStartedEvent extends Event {
 

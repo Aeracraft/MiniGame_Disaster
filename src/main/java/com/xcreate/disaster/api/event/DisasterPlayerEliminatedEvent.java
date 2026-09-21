@@ -40,10 +40,9 @@ public class DisasterPlayerEliminatedEvent extends Event {
     }
 
     /**
-     * 淘汰时的游戏内名字。
+     * 淘汰时的游戏内名字，仅用于展示。
      *
-     * <p>注意：名字可以改，身份不能——做跨平台关联时<b>只能用 {@link #playerId()}</b>，
-     * 名字仅用于展示。</p>
+     * <p>跨平台关联只用 {@link #playerId()}，名字是会变的。</p>
      */
     public String playerName() {
         return playerName;

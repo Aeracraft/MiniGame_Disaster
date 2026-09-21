@@ -7,8 +7,7 @@ import java.util.List;
 /**
  * config.yml 的强类型视图。
  *
- * <p>所有取值都带默认值，且绝不抛异常——配置文件写坏了应该降级运行并告警，
- * 而不是让服务器起不来。</p>
+ * <p>所有取值都带默认值，不抛异常——配置写坏了应该降级运行并告警，而不是让服务器起不来。</p>
  */
 public final class PluginConfig {
 
@@ -70,14 +69,10 @@ public final class PluginConfig {
         return debug;
     }
 
-    /** 底层配置对象，供尚未纳入强类型视图的实验性字段使用。 */
+    /** 底层配置对象，给尚未纳入强类型视图的字段用。 */
     public FileConfiguration raw() {
         return yaml;
     }
-
-    // ------------------------------------------------------------------
-    //  storage
-    // ------------------------------------------------------------------
 
     public static final class Storage {
 
@@ -139,15 +134,11 @@ public final class PluginConfig {
             return connectionTimeoutMs;
         }
 
-        /** JDBC URL。使用 MariaDB 驱动连接 MySQL 协议。 */
+        /** 走 MariaDB 驱动连 MySQL 协议。 */
         public String jdbcUrl() {
             return "jdbc:mariadb://" + host + ":" + port + "/" + database;
         }
     }
-
-    // ------------------------------------------------------------------
-    //  map-selection
-    // ------------------------------------------------------------------
 
     public static final class Maps {
 
@@ -181,10 +172,6 @@ public final class PluginConfig {
         }
     }
 
-    // ------------------------------------------------------------------
-    //  rooms
-    // ------------------------------------------------------------------
-
     public static final class Rooms {
 
         private final int maxRooms;
@@ -203,10 +190,6 @@ public final class PluginConfig {
             return idleTimeoutSeconds;
         }
     }
-
-    // ------------------------------------------------------------------
-    //  game
-    // ------------------------------------------------------------------
 
     public static final class Game {
 
@@ -269,10 +252,6 @@ public final class PluginConfig {
         }
     }
 
-    // ------------------------------------------------------------------
-    //  disaster
-    // ------------------------------------------------------------------
-
     public static final class Disasters {
 
         private final long randomSeed;
@@ -289,7 +268,7 @@ public final class PluginConfig {
             this.maxRetries = yaml.getInt("disaster.spawn-validation.max-retries", 20);
         }
 
-        /** -1 表示每局随机；固定值可用于复现同一局。 */
+        /** -1 表示每局随机，固定值用于复现同一局。 */
         public long randomSeed() {
             return randomSeed;
         }
@@ -314,10 +293,6 @@ public final class PluginConfig {
             return maxRetries;
         }
     }
-
-    // ------------------------------------------------------------------
-    //  afk-detection
-    // ------------------------------------------------------------------
 
     public static final class Afk {
 
@@ -344,10 +319,6 @@ public final class PluginConfig {
         }
     }
 
-    // ------------------------------------------------------------------
-    //  webhook
-    // ------------------------------------------------------------------
-
     public static final class Webhook {
 
         private final boolean enabled;
@@ -368,7 +339,7 @@ public final class PluginConfig {
             return enabled;
         }
 
-        /** 真正可用需要「开关打开」且「地址非空」。 */
+        /** 开关打开且地址非空才算真正可用。 */
         public boolean usable() {
             return enabled && url != null && !url.isBlank();
         }

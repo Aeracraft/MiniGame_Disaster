@@ -7,10 +7,9 @@ description: 复刻 Hypixel Disasters 的多人灾难生存小游戏。
 website: https://github.com/Aeracraft/MiniGame_Disaster
 folia-supported: false
 
-# 仅声明我们会对接其 API 的插件，用于保证加载顺序。
-# 项目遵循「零 shade」原则，这些插件的类一律不会被打进本插件。
-#
-# 注意：AdvancedReplay / ProtocolLib 目前有意不在此列——录像回放尚未进入开发范围。
+# 只声明会对接其 API 的插件，用来保证加载顺序。
+# 项目走「零 shade」，这些插件的类不会被打进本插件。
+# AdvancedReplay / ProtocolLib 有意不在此列，录像回放还没进开发范围。
 softdepend:
   - WorldEdit
   - FastAsyncWorldEdit

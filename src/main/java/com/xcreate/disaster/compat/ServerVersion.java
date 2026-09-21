@@ -5,14 +5,9 @@ import org.bukkit.Bukkit;
 /**
  * 服务端 Minecraft 版本号。
  *
- * <p>本插件兼容 <b>1.20.4 及以上</b>，并且必须同时跑在 Spigot 与 Paper 上。
- * 跨版本易碎点（例如 1.21.3 把 {@code Attribute.GENERIC_MAX_HEALTH} 改名为
- * {@code MAX_HEALTH}）<b>一律不得在主逻辑里静态引用</b>，必须经由本包用反射兜底，
- * 否则会在某个小版本上直接抛 {@link NoSuchFieldError}。</p>
- *
- * <p>关于版本号的解析：Minecraft 在 2026 年把版本方案从 {@code 1.x} 换成了
- * 年号制（例如 {@code 26.1}）。这里仍然按「点分数字段从高位到低位比较」处理，
- * 两套方案都能正确排序：{@code 26.1.0 > 1.20.4}，{@code 26.2.0 > 26.1.0}。</p>
+ * <p>2026 年起版本号从 {@code 1.x} 换成 年.次.补丁 的写法（例如 {@code 26.1}）。
+ * 这里统一按点分数字段从高位到低位比较，两套方案排序都正确：
+ * {@code 26.1.0 > 1.20.4}、{@code 26.2.0 > 26.1.0}。</p>
  */
 public final class ServerVersion implements Comparable<ServerVersion> {
 
