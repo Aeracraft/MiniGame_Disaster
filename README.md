@@ -1,0 +1,127 @@
+# Disaster
+
+复刻 **Hypixel Disasters** 的多人灾难生存小游戏，作为 Minecraft 服务端插件运行。
+
+> **当前状态：M1「工程基建」**
+> 工程骨架已就位（构建、兼容层、配置、命令、对外契约）。**玩法尚未实装**——
+> `/ds` 目前只有 `help` / `info` / `reload` 三个诊断子命令。
+
+---
+
+## 兼容范围
+
+| 项 | 说明 |
+|---|---|
+| Minecraft | **1.20.4 及以上** |
+| 服务端 | **Spigot 打底**；运行时探测 Paper，探测到后启用 Adventure / MiniMessage 增强 |
+| Folia | 不支持 |
+| Java | 编译目标 **Java 17** 字节码 |
+
+跨版本易碎点（例如 1.21.3 把 `Attribute.GENERIC_MAX_HEALTH` 改名为 `MAX_HEALTH`）
+一律经由 `compat` 包反射兜底，主逻辑不直接静态引用，避免在某个小版本上抛
+`NoSuchFieldError`。
+
+---
+
+## 构建
+
+```bash
+./gradlew build
+```
+
+产物为 `build/libs/Disaster-<version>.jar`（已含所需依赖，直接丢进 `plugins/` 即可）。
+
+---
+
+## 命令与权限
+
+| 命令 | 权限 | 说明 |
+|---|---|---|
+| `/ds help` | `disaster.command` | 命令帮助 |
+| `/ds info` | `disaster.command` | 查看运行环境与兼容信息 |
+| `/ds reload` | `disaster.admin.reload` | 重载配置与消息文件 |
+
+玩法类命令（加入对局、投票选图、查看战绩）将随对应里程碑开放。
+
+---
+
+## 依赖说明
+
+本插件**不强制依赖任何其它插件**。以下为可选依赖，用于启用对应能力：
+
+| 插件 | 用途 | 状态 |
+|---|---|---|
+| WorldEdit / FastAsyncWorldEdit | 地图快照与重置（备选后端之一） | 待实装 |
+| Multiverse-Core 5.x | 世界克隆与重置（备选后端之一） | 待实装 |
+
+> 服主侧优先推荐 **FAWE** 而非 WorldEdit：WorldEdit 的插件版本矩阵不连续，
+> 而 FAWE 单个 jar 即可覆盖 1.20.4–1.21.x 全区间。
+
+---
+
+## 关于反作弊（请务必阅读）
+
+**本插件不包含移动层反作弊，这是有意为之，不是遗漏。**
+
+本游戏的玩家位移来源极多——龙卷风会卷起玩家、洪水会推动玩家、爆炸会击飞玩家。
+任何基于「位移异常」的判定在这种场景下都会大量误报，把正常玩家误判为作弊者。
+因此本插件只负责自己擅长的两层：
+
+- **L1 游戏规则校验**：方块破坏/放置白名单、非 PvP 阶段拦截、旁观者隔离、
+  伤害来源过滤、出界检测、禁用合成与丢弃关键物品。
+- **L2 挂机检测**：综合评分式判定（主动事件权重高、视角转动居中、位置变化权重低
+  ——因为它会被灾难推着走），先警告后处置，挂机者不计入获胜名单。
+
+**移动层反作弊请另行安装独立插件**，推荐 **GrimAC** / **Vulcan** / **Matrix**
+三者之一，它们在本游戏场景下表现良好。
+
+---
+
+## 开源协议声明
+
+本项目遵循**零 shade 原则**：不把任何第三方代码打进自己的 jar。
+
+WorldEdit 与 FastAsyncWorldEdit 使用 **GPL-3.0** 许可，因此本插件只在编译期
+（`compileOnly`）依赖它们的 API，运行期由服务端自行加载对应插件，本项目不分发
+也不嵌入其任何代码。Multiverse-Core 使用 BSD-3-Clause，处理方式相同。
+
+**唯一例外**是 MySQL 支持所需的两项依赖，它们会被打包进本插件的 jar：
+
+| 依赖 | 许可 | 用途 |
+|---|---|---|
+| [HikariCP](https://github.com/brettwooldridge/HikariCP) | Apache-2.0 | JDBC 连接池 |
+| [MariaDB Connector/J](https://github.com/mariadb-corporation/mariadb-connector-j) | LGPL-2.1 | 连接 MySQL / MariaDB |
+
+选择 MariaDB Connector/J 而不是 MySQL 官方驱动，是为了规避后者的 GPL-2.0
+许可（及其 FOSS 例外条款）；该驱动完全兼容 MySQL 协议。
+
+两项依赖在打包时会被重定位到 `com.xcreate.disaster.libs.*` 命名空间下，
+不会与服务器上其它插件的类产生冲突。
+
+---
+
+## 数据流向
+
+本插件**只出不进**：不监听任何端口，不暴露任何 HTTP 接口。
+
+对局数据通过 webhook **单向推送**到服主自建的服务，落库逻辑完全由该服务负责，
+本插件不需要知道目标数据库的存在。
+
+- 每条推送带全局唯一 `eventId` 与 HMAC 签名 + 时间戳（防重放）
+- 推送失败进入**本地持久化队列**并指数退避重试，重启不丢
+- 接收端需按 `eventId` 幂等去重（带重试 ⇒ 必然至少一次投递）
+
+---
+
+## 目录结构
+
+```
+src/main/java/com/xcreate/disaster/
+├── DisasterPlugin.java        主类
+├── api/                       对外契约（第三方插件依赖此包）
+│   ├── event/                 语义事件：对局开始/灾难触发/淘汰/方块变更/对局结束
+│   └── replay/                回放引擎契约（ReplayProvider）与数据载体
+├── command/                   /disaster 命令
+├── compat/                    跨版本兼容层：版本探测、平台探测、反射工具
+└── config/                    配置与消息
+```

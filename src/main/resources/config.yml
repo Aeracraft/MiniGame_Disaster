@@ -1,0 +1,88 @@
+# ============================================================
+#  Disaster —— 主配置
+#  部分数值目前为占位值，待玩法细节确认后调整。
+#  字段含义与取值说明见 README。
+# ============================================================
+
+storage:
+  # yaml | mysql
+  # mysql 用于跨服共享（玩家统计 / 服务器心跳 / 房间池 / 成就）。
+  # 连不上时自动降级为 yaml，绝不允许因此阻塞或崩溃服务器。
+  type: yaml
+
+  mysql:
+    host: 127.0.0.1
+    port: 3306
+    database: disaster
+    username: root
+    password: ""
+    table-prefix: "ds_"
+    # HikariCP 连接池
+    pool-size: 6
+    connection-timeout-ms: 5000
+
+map-selection:
+  # RANDOM | VOTE | ROTATE | FIXED
+  mode: RANDOM
+  # 是否允许玩家投票选图（仅 mode 为 RANDOM 时生效）
+  allow-vote: true
+  # 防止连续抽中同一张地图
+  avoid-repeat: true
+  # 投票时长（秒）
+  vote-duration-seconds: 20
+
+rooms:
+  # 全服并发房间上限。单服多房间并行，每个房间可绑定不同地图。
+  max-rooms: 4
+  # 空闲房间多少秒后自动回收（卸载世界并删除目录）
+  idle-timeout-seconds: 300
+
+game:
+  min-players: 4
+  max-players: 16
+  # 开局散开准备时间（秒）
+  prepare-seconds: 10
+  # 每波灾难掷骰间隔（秒）
+  wave-interval-seconds: 60
+  # 次灾难触发概率
+  secondary-disaster-chance: 0.5
+
+  # 局内规则修正器（对齐 Hypixel「私人游戏」修正器，全员配置化）
+  modifiers:
+    natural-regeneration: false
+    fall-damage: true
+    max-health: 20
+    keep-inventory: false
+
+disaster:
+  # -1 表示每局随机；设为固定值可复现同一局（便于排查问题）
+  random-seed: -1
+  # 落雷预警时长（tick）。落点校验链：边界内 / 实心地面 / 非液体 /
+  # 离出生点足够远 / 落点间最小间距，重抽上限 20 次，全失败则放弃本次落点。
+  lightning-warning-ticks: 30
+  spawn-validation:
+    min-distance-from-spawn: 8
+    min-distance-between-points: 3
+    max-retries: 20
+
+afk-detection:
+  # L2 挂机检测：综合评分式判定，先警告后处置，挂机者不计入获胜名单。
+  enabled: true
+  warn-threshold-seconds: 60
+  action-threshold-seconds: 120
+
+webhook:
+  # 只出不进：本插件不监听任何端口，仅把对局数据推送到你自建的服务。
+  # 每条推送都带 HMAC 签名与时间戳；失败进入本地持久化队列并指数退避重试。
+  enabled: false
+  url: ""
+  secret: ""
+  timeout-ms: 5000
+  # 推送内容：match_summary | event_timeline | player_detail
+  events:
+    - match_summary
+    - event_timeline
+    - player_detail
+
+logging:
+  debug: false

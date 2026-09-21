@@ -1,0 +1,59 @@
+name: Disaster
+version: '${version}'
+main: com.xcreate.disaster.DisasterPlugin
+api-version: '1.20'
+authors: [ Aeracraft ]
+description: 复刻 Hypixel Disasters 的多人灾难生存小游戏。
+website: https://github.com/Aeracraft/MiniGame_Disaster
+folia-supported: false
+
+# 仅声明我们会对接其 API 的插件，用于保证加载顺序。
+# 项目遵循「零 shade」原则，这些插件的类一律不会被打进本插件。
+#
+# 注意：AdvancedReplay / ProtocolLib 目前有意不在此列——录像回放尚未进入开发范围。
+softdepend:
+  - WorldEdit
+  - FastAsyncWorldEdit
+  - Multiverse-Core
+
+commands:
+  disaster:
+    description: Disaster 主命令
+    aliases: [ ds ]
+    usage: /ds help
+    permission: disaster.command
+    permission-message: 你没有权限使用该命令。
+
+permissions:
+  disaster.command:
+    description: 使用 /disaster 主命令
+    default: true
+
+  disaster.play:
+    description: 加入对局、投票选图、查看个人战绩
+    default: true
+
+  disaster.admin:
+    description: 全部管理命令的总开关
+    default: op
+    children:
+      disaster.admin.map: true
+      disaster.admin.room: true
+      disaster.admin.reload: true
+      disaster.admin.debug: true
+
+  disaster.admin.map:
+    description: 地图管理（标点、设边界、重载地图定义、生成测试城市）
+    default: op
+
+  disaster.admin.room:
+    description: 房间管理（强制开局、强制结束、踢出玩家）
+    default: op
+
+  disaster.admin.reload:
+    description: 重载配置文件与消息文件
+    default: op
+
+  disaster.admin.debug:
+    description: 调试命令（房间状态、存储状态、上报队列状态）
+    default: op
