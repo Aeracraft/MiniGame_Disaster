@@ -10,3 +10,7 @@ point-count: 3
 options:
   # 刷新半径（格）
   radius: 10
+  # 每个刷新点刷几只
+  per-point: 2
+  # 在刷新点周围再散开多少格
+  scatter: 3.0

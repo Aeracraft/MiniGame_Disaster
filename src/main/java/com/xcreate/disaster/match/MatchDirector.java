@@ -318,8 +318,8 @@ public final class MatchDirector {
 
             SpawnOutcome outcome = plugin.spawnPlanner().plan(definition, context, terrain);
             List<MapPoint> points = outcome.points();
-            int changed = effects.apply(
-                    new EffectContext(world, terrain, plugin.blocks(), definition), points);
+            int changed = effects.apply(new EffectContext(world, terrain, plugin.blocks(),
+                    room.map().bounds(), match.alive(), plugin.matchRandom(), definition), points);
 
             if (!effects.has(definition.id())) {
                 plugin.getLogger().info("对局 " + match.matchId() + " 第 " + wave + " 波掷中 "

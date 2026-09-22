@@ -9,3 +9,7 @@ point-count: 5
 options:
   # 散落半径（格）
   radius: 10
+  # 每个落点上方掉几个铁砧
+  per-point: 3
+  # 在落点周围再散开多少格，免得铁砧叠成一根柱子
+  scatter: 3.0

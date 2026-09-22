@@ -2,6 +2,8 @@ package com.xcreate.disaster.disaster;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -16,9 +18,18 @@ class DisasterEffectsTest {
 
     @Test
     void 没实现效果的灾种查不到() {
-        // 一期只做了地陷，其余灾种掷中后只落点不动方块，不该在这里报错
-        assertFalse(DisasterEffects.builtin().has("meteor_shower"));
-        assertTrue(DisasterEffects.builtin().find("meteor_shower").isEmpty());
+        // 掷到还没写效果的灾种时只落点不动方块，不该在这里报错
+        assertFalse(DisasterEffects.builtin().has("no_such_disaster"));
+        assertTrue(DisasterEffects.builtin().find("no_such_disaster").isEmpty());
+    }
+
+    @Test
+    void 做好的灾种都登记在表里() {
+        DisasterEffects effects = DisasterEffects.builtin();
+        for (String id : List.of(MeteorEffect.ID, SinkholeEffect.ID, AcidRainEffect.ID,
+                ZombieHordeEffect.ID, AnvilRainEffect.ID)) {
+            assertTrue(effects.has(id), id);
+        }
     }
 
     @Test

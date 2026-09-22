@@ -22,7 +22,11 @@ public final class DisasterEffects {
     /** 已经做好的效果。补一个新灾种就在这里登记一个。 */
     public static DisasterEffects builtin() {
         DisasterEffects effects = new DisasterEffects();
+        effects.register(new MeteorEffect());
         effects.register(new SinkholeEffect());
+        effects.register(new AcidRainEffect());
+        effects.register(new ZombieHordeEffect());
+        effects.register(new AnvilRainEffect());
         return effects;
     }
 

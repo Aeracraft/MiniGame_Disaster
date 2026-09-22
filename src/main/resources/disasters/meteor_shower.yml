@@ -10,3 +10,9 @@ point-count: 4
 options:
   # 散落半径（格）
   radius: 12
+  # 单个坑的半径（格），坑沿在半径处收平
+  crater-radius: 3
+  # 坑心往下挖几格
+  crater-depth: 3
+  # 站在这个距离内会被点着并掀开（格）
+  scorch-radius: 6

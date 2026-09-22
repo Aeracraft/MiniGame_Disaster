@@ -6,3 +6,8 @@ weight: 0.75
 # 露天的地方随机被蚀穿，全图生效，没有落点
 spawn-strategy: NONE
 point-count: 0
+options:
+  # 每次从全图撒多少列来蚀，越大破坏面越广
+  columns: 400
+  # 每列从地表往下蚀几格，最深一格换成砂砾而不是挖空
+  depth: 3
