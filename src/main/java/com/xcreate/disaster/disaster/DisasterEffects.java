@@ -23,10 +23,15 @@ public final class DisasterEffects {
     public static DisasterEffects builtin() {
         DisasterEffects effects = new DisasterEffects();
         effects.register(new MeteorEffect());
+        effects.register(new LightningEffect());
         effects.register(new SinkholeEffect());
+        effects.register(new TornadoEffect());
+        effects.register(new FloodEffect());
         effects.register(new AcidRainEffect());
         effects.register(new ZombieHordeEffect());
+        effects.register(new FloorIsLavaEffect());
         effects.register(new AnvilRainEffect());
+        effects.register(new PurgeEffect());
         return effects;
     }
 
@@ -57,5 +62,15 @@ public final class DisasterEffects {
         return find(context.definition().id())
                 .map(effect -> effect.apply(context, points))
                 .orElse(0);
+    }
+
+    /**
+     * 落地并接管后续。
+     *
+     * <p>返回值非空表示这个灾种还要继续作用，交给对局循环每秒推进；一次性灾种返回空。</p>
+     */
+    public Optional<ActiveDisaster> activate(EffectContext context, List<MapPoint> points) {
+        return find(context.definition().id())
+                .flatMap(effect -> effect.activate(context, points));
     }
 }

@@ -9,3 +9,10 @@ point-count: 1
 options:
   # 贴边的宽度（格）
   edge-width: 12
+  # 每秒推进多少格
+  speed: 5.0
+  # 把玩家往风眼里拽的半径与力度
+  pull-radius: 10.0
+  pull-strength: 1.1
+  # 沿途掀掉多大范围内的地表（半径，0 表示只卷人不掀地）
+  sweep-radius: 2

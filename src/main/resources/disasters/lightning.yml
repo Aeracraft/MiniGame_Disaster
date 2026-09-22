@@ -9,3 +9,6 @@ point-count: 8
 options:
   # 每次采样多少列来找高点。越大越准，代价也跟着涨
   samples: 48
+  # 玩家附近额外补几道。全劈在高地上的话，躲进坑里的反而最安全
+  near-strikes: 3
+  near-radius: 6.0

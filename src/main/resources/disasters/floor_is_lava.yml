@@ -6,3 +6,6 @@ weight: 0.5
 # 作用在玩家脚下的方块上，没有落点
 spawn-strategy: NONE
 point-count: 0
+options:
+  # 每隔几秒把玩家踩着的那一格换成岩浆
+  interval-seconds: 3

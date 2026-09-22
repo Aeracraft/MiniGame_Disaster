@@ -6,3 +6,8 @@ weight: 0.75
 # 水位整体上升，全图生效，没有落点
 spawn-strategy: NONE
 point-count: 0
+options:
+  # 每涨一格要几秒，越小水漫得越快
+  rise-seconds: 6
+  # 每秒最多铺多少列。地图大就调大，否则水会漫得比水位还慢
+  columns-per-step: 8000

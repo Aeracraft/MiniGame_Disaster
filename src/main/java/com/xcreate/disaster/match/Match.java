@@ -2,6 +2,7 @@ package com.xcreate.disaster.match;
 
 import com.xcreate.disaster.api.storage.MatchParticipant;
 import com.xcreate.disaster.api.storage.MatchRecord;
+import com.xcreate.disaster.disaster.MatchRules;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -46,6 +47,9 @@ public final class Match {
     /** 本局掷中过的灾种。持续型灾难也在里面——它们这一局不会再被掷中第二次。 */
     private final Set<String> usedDisasters = new LinkedHashSet<>();
 
+    /** 灾难改得动的规则开关。开局一律是关的，混战之类的灾种掷中后才打开。 */
+    private final MatchRules rules = new MatchRules();
+
     private int waveIndex;
 
     public Match(String matchId, String roomId, String mapId, long startedAtMillis,
@@ -74,6 +78,11 @@ public final class Match {
 
     public String mapId() {
         return mapId;
+    }
+
+    /** 本局的规则开关。灾种改它，对局循环读它。 */
+    public MatchRules rules() {
+        return rules;
     }
 
     public long startedAtMillis() {

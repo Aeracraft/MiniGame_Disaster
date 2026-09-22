@@ -26,9 +26,18 @@ class DisasterEffectsTest {
     @Test
     void 做好的灾种都登记在表里() {
         DisasterEffects effects = DisasterEffects.builtin();
-        for (String id : List.of(MeteorEffect.ID, SinkholeEffect.ID, AcidRainEffect.ID,
-                ZombieHordeEffect.ID, AnvilRainEffect.ID)) {
+        for (String id : List.of(MeteorEffect.ID, LightningEffect.ID, SinkholeEffect.ID,
+                TornadoEffect.ID, FloodEffect.ID, AcidRainEffect.ID, ZombieHordeEffect.ID,
+                FloorIsLavaEffect.ID, AnvilRainEffect.ID, PurgeEffect.ID)) {
             assertTrue(effects.has(id), id);
+        }
+    }
+
+    @Test
+    void 每个内置灾种都有对应效果() {
+        DisasterEffects effects = DisasterEffects.builtin();
+        for (String id : BuiltinDisasters.IDS) {
+            assertTrue(effects.has(id), "灾种 " + id + " 没有实现效果");
         }
     }
 

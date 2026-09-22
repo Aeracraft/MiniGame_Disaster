@@ -9,6 +9,7 @@ import com.xcreate.disaster.api.storage.MatchParticipant;
 import com.xcreate.disaster.api.storage.MatchRecord;
 import com.xcreate.disaster.api.storage.PlayerDelta;
 import com.xcreate.disaster.config.PluginConfig;
+import com.xcreate.disaster.disaster.ActiveDisaster;
 import com.xcreate.disaster.disaster.DisasterDefinition;
 import com.xcreate.disaster.disaster.DisasterEffects;
 import com.xcreate.disaster.disaster.DisasterRoll;
@@ -33,6 +34,7 @@ import org.bukkit.scheduler.BukkitTask;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,6 +76,13 @@ public final class MatchDirector {
         long countdownEndsAt;
         long nextWaveAt;
         long endingEndsAt;
+
+        /** 还在作用的活动灾难。每轮推一次，结束的自己摘掉。 */
+        final List<Running> actives = new ArrayList<>();
+    }
+
+    /** 一个活动灾难，连同它的灾种定义——推进时要用定义重建效果上下文。 */
+    private record Running(DisasterDefinition definition, ActiveDisaster active) {
     }
 
     public MatchDirector(DisasterPlugin plugin, RoomManager rooms, DisasterEffects effects,
@@ -226,6 +235,8 @@ public final class MatchDirector {
         plugin.reseedMatchRandom();
         plugin.blocks().matchId(match.matchId());
 
+        // 开局先把互相伤害关掉，混战掷中后由灾种自己打开
+        world.setPVP(false);
         spread(room, world, players);
         Bukkit.getPluginManager().callEvent(new DisasterMatchStartedEvent(
                 match.matchId(), match.mapId(), match.roomId(), players, now));
@@ -265,14 +276,52 @@ public final class MatchDirector {
         }
 
         dropQuitters(room, match, now);
+        advanceActives(room, run, match, now);
 
         if (now >= run.nextWaveAt) {
             run.nextWaveAt = now + waveIntervalMillis();
-            runWave(room, match, now);
+            runWave(room, run, match, now);
         }
 
-        if (match.isOver(now, config.game().matchDurationSeconds())) {
+        if (ended(match, now)) {
             end(room, run, match, now);
+        }
+    }
+
+    /** 结束条件：时间到、只剩最后一个人，或混战开了之后存活掉到开局的一半。 */
+    private boolean ended(Match match, long now) {
+        if (match.isOver(now, config.game().matchDurationSeconds())) {
+            return true;
+        }
+        return match.rules().halfSurvivorsEnd()
+                && match.participants().size() > 1
+                && match.alive().size() * 2 <= match.participants().size();
+    }
+
+    /**
+     * 推进本局还在作用的活动灾难。
+     *
+     * <p>每秒一次。每轮重建效果上下文——玩家可能这一秒又倒了一个，活动灾难该看到新的存活名单。</p>
+     */
+    private void advanceActives(Room room, Run run, Match match, long now) {
+        if (run.actives.isEmpty()) {
+            return;
+        }
+        World world = room.world();
+        if (world == null) {
+            run.actives.clear();
+            return;
+        }
+        int elapsed = match.elapsedSeconds(now);
+        Iterator<Running> iterator = run.actives.iterator();
+        while (iterator.hasNext()) {
+            Running running = iterator.next();
+            EffectContext context = new EffectContext(world, new WorldTerrain(world), plugin.blocks(),
+                    config, room.map().bounds(), match.alive(), plugin.matchRandom(),
+                    match.rules(), running.definition());
+            if (!running.active().tick(context, elapsed)) {
+                iterator.remove();
+            }
         }
     }
 
@@ -294,7 +343,7 @@ public final class MatchDirector {
         }
     }
 
-    private void runWave(Room room, Match match, long now) {
+    private void runWave(Room room, Run run, Match match, long now) {
         World world = room.world();
         if (world == null) {
             return;
@@ -318,8 +367,12 @@ public final class MatchDirector {
 
             SpawnOutcome outcome = plugin.spawnPlanner().plan(definition, context, terrain);
             List<MapPoint> points = outcome.points();
-            int changed = effects.apply(new EffectContext(world, terrain, plugin.blocks(),
-                    room.map().bounds(), match.alive(), plugin.matchRandom(), definition), points);
+            EffectContext effectContext = new EffectContext(world, terrain, plugin.blocks(),
+                    config, room.map().bounds(), match.alive(), plugin.matchRandom(),
+                    match.rules(), definition);
+            int changed = effects.apply(effectContext, points);
+            effects.activate(effectContext, points)
+                    .ifPresent(active -> run.actives.add(new Running(definition, active)));
 
             if (!effects.has(definition.id())) {
                 plugin.getLogger().info("对局 " + match.matchId() + " 第 " + wave + " 波掷中 "
@@ -344,6 +397,7 @@ public final class MatchDirector {
             return;
         }
         run.endingEndsAt = now + ENDING_SECONDS * 1000L;
+        run.actives.clear();
 
         List<UUID> survivors = match.survivors();
         int duration = match.elapsedSeconds(now);
