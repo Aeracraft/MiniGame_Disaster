@@ -1,6 +1,7 @@
 package com.xcreate.disaster;
 
 import com.xcreate.disaster.api.replay.ReplayProvider;
+import com.xcreate.disaster.api.reputation.ReputationProvider;
 import com.xcreate.disaster.api.room.RoomProvisioner;
 import com.xcreate.disaster.command.DisasterRootCommand;
 import com.xcreate.disaster.compat.Platform;
@@ -21,6 +22,8 @@ import com.xcreate.disaster.permission.PermissionBridge;
 import com.xcreate.disaster.permission.PermissionCache;
 import com.xcreate.disaster.permission.PermissionService;
 import com.xcreate.disaster.permission.TitleProvider;
+import com.xcreate.disaster.reputation.BuiltinReputationProvider;
+import com.xcreate.disaster.reputation.ReputationService;
 import com.xcreate.disaster.room.LocalRoomProvisioner;
 import com.xcreate.disaster.room.RoomManager;
 import com.xcreate.disaster.storage.StorageManager;
@@ -58,6 +61,7 @@ public final class DisasterPlugin extends JavaPlugin {
     private WaveRoller waveRoller;
     private DisasterEffects effects;
     private MatchDirector matches;
+    private ReputationService reputation;
 
     @Override
     public void onEnable() {
@@ -131,6 +135,9 @@ public final class DisasterPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new MatchListener(this, rooms, matches), this);
         this.matches.start();
 
+        this.reputation = new ReputationService(this, reputationProvider());
+        this.reputation.start();
+
         registerCommands();
 
         getLogger().info("Disaster 已启用，耗时 " + (System.currentTimeMillis() - startedAt) + " ms。");
@@ -140,6 +147,9 @@ public final class DisasterPlugin extends JavaPlugin {
     public void onDisable() {
         // 房间要先清掉：卸载世界、删副本目录都得趁服务端还在正常跑
         // 运行循环得先停，否则它会对着正在卸载的世界继续推进对局
+        if (reputation != null) {
+            reputation.stop();
+        }
         if (matches != null) {
             matches.stop();
         }
@@ -196,6 +206,9 @@ public final class DisasterPlugin extends JavaPlugin {
         if (matches != null) {
             matches.apply(pluginConfig);
         }
+        if (reputation != null) {
+            reputation.apply();
+        }
     }
 
     /** 每局开局取一次随机源。配置里固定了种子就复现同一局。 */
@@ -220,6 +233,18 @@ public final class DisasterPlugin extends JavaPlugin {
     public ReplayProvider replayProvider() {
         ReplayProvider provider = service(ReplayProvider.class);
         return provider == null || !provider.available() ? null : provider;
+    }
+
+    /**
+     * 取互评实现。没人在 ServicesManager 注册就用内置的——与回放不同，这里没有实现方也得能用。
+     *
+     * <p>注册了但自报不可用（比如它的存储没起来）会退回内置，而不是让评价整个消失。</p>
+     */
+    private ReputationProvider reputationProvider() {
+        ReputationProvider remote = service(ReputationProvider.class);
+        return remote != null && remote.available()
+                ? remote
+                : new BuiltinReputationProvider(storage.provider(), pluginConfig.rating());
     }
 
     /** 取第三方注册的服务，没人注册时返回 null。 */
@@ -247,6 +272,11 @@ public final class DisasterPlugin extends JavaPlugin {
 
     public StorageManager storage() {
         return storage;
+    }
+
+    /** 评价与互评。命令层与对局收尾都从这里进。 */
+    public ReputationService reputation() {
+        return reputation;
     }
 
     /** 方块变更入口。任何要改世界方块的代码都必须走它，别直接 setType。 */

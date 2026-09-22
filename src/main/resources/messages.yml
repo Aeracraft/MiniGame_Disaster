@@ -76,6 +76,14 @@ disaster:
   no-bounds: "{prefix}&c地图 &f{id} &c还没标边界，落点全会被拒。先执行 &f/ds map pos1&c、&f/ds map pos2 &c再 &f/ds map bounds {id}&c。"
   world-missing: "{prefix}&c找不到地图 &f{id} &c的模板世界 &f{world}&c，先加载它再试。"
 
+rating:
+  accepted: "{prefix}&a{reason}"
+  rejected: "{prefix}&e{reason}"
+  usage: "{prefix}&7用法：&f/{label} rate <1-5> [标签…]&7 给刚打完的一局打分，&f/{label} rep <玩家> [标签…]&7 给同局玩家点赞。"
+  tag-hint: "{prefix}&7评价标签：&f{tags}"
+  rep-tag-hint: "{prefix}&7点赞标签：&f{tags}"
+  reputation: "{prefix}&7你的荣誉值：&f{value}"
+
 storage:
   mysql-connected: "{prefix}&a已连接 MySQL：&f{host}:{port}/{database}"
   mysql-failed: "{prefix}&e连接 MySQL 失败，已临时降级为本地存储：&f{reason}"

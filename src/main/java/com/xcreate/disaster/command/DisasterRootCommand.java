@@ -28,12 +28,14 @@ public final class DisasterRootCommand implements CommandExecutor, TabCompleter 
     private final MapCommand mapCommand;
     private final RoomCommand roomCommand;
     private final DisasterCommand disasterCommand;
+    private final EvaluationCommand evaluationCommand;
 
     public DisasterRootCommand(DisasterPlugin plugin) {
         this.plugin = plugin;
         this.mapCommand = new MapCommand(plugin);
         this.roomCommand = new RoomCommand(plugin);
         this.disasterCommand = new DisasterCommand(plugin);
+        this.evaluationCommand = new EvaluationCommand(plugin);
     }
 
     @Override
@@ -53,6 +55,8 @@ public final class DisasterRootCommand implements CommandExecutor, TabCompleter 
             case "map" -> mapCommand.execute(sender, label, tail(args));
             case "room" -> roomCommand.execute(sender, label, tail(args));
             case "disaster", "ds" -> disasterCommand.execute(sender, label, tail(args));
+            case "rate", "rating" -> evaluationCommand.rate(sender, label, tail(args));
+            case "rep", "recommend" -> evaluationCommand.recommend(sender, label, tail(args));
             default -> plugin.messages().send(sender, "command.unknown-subcommand", "input", args[0]);
         }
         return true;
@@ -64,6 +68,8 @@ public final class DisasterRootCommand implements CommandExecutor, TabCompleter 
         if (sender.hasPermission(Permissions.PLAY)) {
             sender.sendMessage("§8» §f/" + label + " join [地图] §7— 加入对局");
             sender.sendMessage("§8» §f/" + label + " leave §7— 离开当前对局");
+            sender.sendMessage("§8» §f/" + label + " rate <1-5> [标签] §7— 给刚打完的一局评分");
+            sender.sendMessage("§8» §f/" + label + " rep <玩家> [标签] §7— 给同局玩家点赞");
         }
         sender.sendMessage("§8» §f/" + label + " info §7— 查看运行环境与兼容信息");
         if (sender.hasPermission(Permissions.ADMIN_ROOM)) {
@@ -129,6 +135,9 @@ public final class DisasterRootCommand implements CommandExecutor, TabCompleter 
                 + " §7个已实现 §8(" + String.join("、", plugin.effects().ids()) + ")");
         sender.sendMessage("§8» §7对局       §f" + plugin.matches().activeMatches().size()
                 + " §7局进行中 §8(单局 " + config.game().matchDurationSeconds() + " 秒)");
+        sender.sendMessage("§8» §7评价       §f" + plugin.reputation().provider().id()
+                + " §8(窗口 " + config.rating().windowSeconds() + " 秒，冷却 "
+                + config.rating().cooldownDays() + " 天)");
         sender.sendMessage("§8» §7回放引擎   " + replayLabel);
         sender.sendMessage("§8§m                                        ");
     }
@@ -155,6 +164,14 @@ public final class DisasterRootCommand implements CommandExecutor, TabCompleter 
                 || args[0].equalsIgnoreCase("ds"))) {
             return disasterCommand.complete(sender, tail(args));
         }
+        if (args.length > 1 && (args[0].equalsIgnoreCase("rate")
+                || args[0].equalsIgnoreCase("rating"))) {
+            return evaluationCommand.completeRate(sender, tail(args));
+        }
+        if (args.length > 1 && (args[0].equalsIgnoreCase("rep")
+                || args[0].equalsIgnoreCase("recommend"))) {
+            return evaluationCommand.completeRecommend(sender, tail(args));
+        }
         if (args.length == 2 && (args[0].equalsIgnoreCase("join")
                 || args[0].equalsIgnoreCase("j"))) {
             return filterByPrefix(mapIds(), args[1]);
@@ -169,6 +186,8 @@ public final class DisasterRootCommand implements CommandExecutor, TabCompleter 
         if (sender.hasPermission(Permissions.PLAY)) {
             options.add("join");
             options.add("leave");
+            options.add("rate");
+            options.add("rep");
         }
         if (sender.hasPermission(Permissions.ADMIN_ROOM)) {
             options.add("room");

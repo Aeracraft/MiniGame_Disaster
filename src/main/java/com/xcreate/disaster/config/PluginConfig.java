@@ -3,6 +3,7 @@ package com.xcreate.disaster.config;
 import org.bukkit.configuration.file.FileConfiguration;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * config.yml 的强类型视图。
@@ -18,6 +19,7 @@ public final class PluginConfig {
     private final Game game;
     private final Disasters disasters;
     private final Afk afk;
+    private final Rating rating;
     private final Webhook webhook;
     private final Permission permission;
     private final String serverId;
@@ -31,6 +33,7 @@ public final class PluginConfig {
         this.game = new Game(yaml);
         this.disasters = new Disasters(yaml);
         this.afk = new Afk(yaml);
+        this.rating = new Rating(yaml);
         this.webhook = new Webhook(yaml);
         this.permission = new Permission(yaml);
         this.serverId = yaml.getString("server-id", "");
@@ -63,6 +66,10 @@ public final class PluginConfig {
 
     public Afk afk() {
         return afk;
+    }
+
+    public Rating rating() {
+        return rating;
     }
 
     public Webhook webhook() {
@@ -395,6 +402,76 @@ public final class PluginConfig {
         /** 权限快照缓存有效期（秒），0 表示不缓存。 */
         public int cacheTtlSeconds() {
             return cacheTtlSeconds;
+        }
+    }
+
+    /**
+     * 对局评价与玩家互评。
+     *
+     * <p>窗口期从结算那一刻算起。默认给五分钟——结算阶段只有十秒，来不及评。
+     * 冷却天数只约束「同一对人」，防止熟人反复互刷，换个对象赞不受影响。</p>
+     */
+    public static final class Rating {
+
+        private final boolean enabled;
+        private final int windowSeconds;
+        private final int cooldownDays;
+        private final int perMatchLimit;
+        private final List<String> tags;
+        private final List<String> repTags;
+
+        private Rating(FileConfiguration yaml) {
+            this.enabled = yaml.getBoolean("rating.enabled", true);
+            this.windowSeconds = yaml.getInt("rating.window-seconds", 300);
+            this.cooldownDays = yaml.getInt("rating.cooldown-days", 7);
+            this.perMatchLimit = yaml.getInt("rating.per-match-limit", 3);
+            this.tags = List.copyOf(yaml.getStringList("rating.tags"));
+            this.repTags = List.copyOf(yaml.getStringList("rating.rep-tags"));
+        }
+
+        public boolean enabled() {
+            return enabled;
+        }
+
+        /** 结算后多久内可以评价（秒）。 */
+        public int windowSeconds() {
+            return windowSeconds;
+        }
+
+        public long windowMillis() {
+            return Math.max(0, windowSeconds) * 1000L;
+        }
+
+        /** 同一对玩家两次互评之间的间隔（天），0 表示不限。 */
+        public int cooldownDays() {
+            return cooldownDays;
+        }
+
+        public long cooldownMillis() {
+            return Math.max(0, cooldownDays) * 24L * 60L * 60L * 1000L;
+        }
+
+        /** 每人每局最多赞几个人，0 表示不限。 */
+        public int perMatchLimit() {
+            return perMatchLimit;
+        }
+
+        /** 对局评价可选的问题标签。 */
+        public List<String> tags() {
+            return tags;
+        }
+
+        /** 互评可选的赞许标签。 */
+        public List<String> repTags() {
+            return repTags;
+        }
+
+        public Set<String> tagSet() {
+            return Set.copyOf(tags);
+        }
+
+        public Set<String> repTagSet() {
+            return Set.copyOf(repTags);
         }
     }
 

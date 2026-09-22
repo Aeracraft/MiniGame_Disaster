@@ -98,6 +98,19 @@ public final class Match {
         return name == null ? "" : name;
     }
 
+    /**
+     * 参与者与名字的对照表，键与 {@link #participants()} 完全一致。
+     *
+     * <p>名字快照可能缺人（比如某一刻查不到名字），这里补齐成空串，免得下游按名单遍历时漏人。</p>
+     */
+    public Map<UUID, String> namedParticipants() {
+        Map<UUID, String> named = new LinkedHashMap<>(participants.size());
+        for (UUID playerId : participants) {
+            named.put(playerId, nameOf(playerId));
+        }
+        return named;
+    }
+
     public int elapsedSeconds(long nowMillis) {
         return (int) Math.max(0L, (nowMillis - startedAtMillis) / 1000L);
     }

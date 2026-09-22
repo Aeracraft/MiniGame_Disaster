@@ -407,6 +407,9 @@ public final class MatchDirector {
 
         announce(room, match, survivors, duration);
         save(match, now);
+
+        // 给参与者开评价窗口。房间再过几秒就没了，窗口得独立于房间存活
+        plugin.reputation().open(match.namedParticipants(), match.matchId());
         plugin.getLogger().info("对局 " + match.matchId() + " 结束，存活 " + survivors.size()
                 + " / " + match.participants().size() + "，用时 " + duration + " 秒。");
     }
